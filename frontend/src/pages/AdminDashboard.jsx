@@ -6,8 +6,8 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const [adminUser, setAdminUser] = useState(null);
   
   // Login form state
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('youngstar2026');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 

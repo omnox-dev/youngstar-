@@ -268,9 +268,12 @@ app.get('/api/vargani/:receipt_no', (req, res) => {
   });
 });
 
-// Serve main page on root
+// Serve API status on root
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '_1', 'code.html'));
+  res.json({
+    success: true,
+    message: 'Youngstar Mitra Mandal API Server is running live! 🚩'
+  });
 });
 
 // Start Server

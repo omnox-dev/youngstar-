@@ -11,6 +11,14 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
+// Root health check route for Render
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Youngstar Mitra Mandal Express API Server is running live! 🚩'
+  });
+});
+
 // Initialize SQLite Database
 const dbPath = path.join(__dirname, 'vargani.db');
 const db = new sqlite3.Database(dbPath, (err) => {

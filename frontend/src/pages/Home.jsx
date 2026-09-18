@@ -201,7 +201,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                 e.stopPropagation();
                 setActiveTab('vargani');
               }}
-              className="bg-[#00873a] hover:bg-[#006b2c] text-white px-7 py-3 rounded-xl font-bold text-sm shadow-lg transition-all border-2 border-emerald-400"
+              className="w-full sm:w-auto bg-[#00873a] hover:bg-[#006b2c] text-white px-7 py-3 rounded-xl font-bold text-sm shadow-lg transition-all border-2 border-emerald-400 text-center"
             >
               🌸 वर्गणी / देणगी द्या
             </button>
@@ -226,7 +226,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                   e.stopPropagation();
                   onOpenAuth();
                 }}
-                className="bg-[#d14307] hover:bg-[#a93200] text-white px-7 py-3 rounded-xl font-bold text-sm shadow-lg transition-all border-2 border-[#fe932c]"
+                className="w-full sm:w-auto bg-[#d14307] hover:bg-[#a93200] text-white px-7 py-3 rounded-xl font-bold text-sm shadow-lg transition-all border-2 border-[#fe932c] text-center"
               >
                 🔑 लॉगिन / सभासद नोंदणी
               </button>

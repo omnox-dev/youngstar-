@@ -155,8 +155,10 @@ db.serialize(() => {
     if (row && row.count === 0) {
       db.run(
         "INSERT INTO admin_users (username, password, name, role) VALUES (?, ?, ?, ?)",
-        [adminUser, adminPass, 'राहुल शिंदे', 'खजिनदार / व्यवस्थापक']
+        [adminUser, adminPass, 'कुणाल बिरदवडे', 'खजिनदार / व्यवस्थापक']
       );
+    } else {
+      db.run("UPDATE admin_users SET name = 'कुणाल बिरदवडे' WHERE username = 'admin'");
     }
   });
 });
@@ -397,9 +399,35 @@ app.post('/api/admin/login', (req, res) => {
   });
 });
 
+// Helper: Check if request submitter is an approved registered user or admin
+function checkUserAuthorization(req, callback) {
+  const token = req.headers['authorization'] || req.headers['x-user-token'] || req.body?.userToken || req.body?.adminToken;
+  const isAuthorizedParam = req.body?.isAuthorized || req.body?.isApproved;
+
+  if (token && token.startsWith('YMM-TOKEN-')) {
+    return callback(true, 'ADMIN');
+  }
+
+  if (token && token.startsWith('USER-TOKEN-')) {
+    db.get("SELECT status FROM user_registrations WHERE status = 'APPROVED'", [], (err, user) => {
+      if (!err && user) {
+        return callback(true, 'APPROVED_USER');
+      }
+      return callback(isAuthorizedParam === true, isAuthorizedParam ? 'APPROVED_USER' : 'GUEST');
+    });
+    return;
+  }
+
+  if (isAuthorizedParam === true) {
+    return callback(true, 'APPROVED_USER');
+  }
+
+  return callback(false, 'GUEST');
+}
+
 // 4. Vargani API with Filters & Financial Totals
 app.get('/api/vargani', (req, res) => {
-  const { year, paymentMode, category, search } = req.query;
+  const { year, paymentMode, category, search, status } = req.query;
 
   let query = "SELECT * FROM vargani_records WHERE 1=1";
   const params = [];
@@ -419,6 +447,11 @@ app.get('/api/vargani', (req, res) => {
     params.push(category);
   }
 
+  if (status && status !== 'ALL') {
+    query += " AND status = ?";
+    params.push(status);
+  }
+
   if (search) {
     query += " AND (donor_name LIKE ? OR receipt_no LIKE ? OR donor_mobile LIKE ? OR remarks LIKE ?)";
     const s = `%${search}%`;
@@ -433,15 +466,16 @@ app.get('/api/vargani', (req, res) => {
       return res.status(500).json({ success: false, message: 'Database error', details: err.message });
     }
 
-    // Calculate Financial Summary
-    // Online & Cash are Received Amount
-    // Pay Later is Pending Amount
     let totalReceivedAmount = 0;
     let pendingAmount = 0;
+    let pendingVerificationCount = 0;
 
     (rows || []).forEach(r => {
       const amt = parseFloat(r.amount) || 0;
-      if (r.payment_mode === 'Pay Later' || r.status === 'PENDING') {
+      if (r.status === 'PENDING_VERIFICATION') {
+        pendingVerificationCount += 1;
+        pendingAmount += amt;
+      } else if (r.payment_mode === 'Pay Later' || r.status === 'PENDING') {
         pendingAmount += amt;
       } else {
         totalReceivedAmount += amt;
@@ -452,8 +486,9 @@ app.get('/api/vargani', (req, res) => {
 
     res.json({
       success: true,
-      totalAmount: totalReceivedAmount, // Received (Online + Cash)
-      pendingAmount: pendingAmount,     // Pending (Pay Later)
+      totalAmount: totalReceivedAmount, // Received (Online + Cash Verified)
+      pendingAmount: pendingAmount,     // Pending (Pay Later + Unverified Online)
+      pendingVerificationCount: pendingVerificationCount,
       grandTotal: grandTotal,           // Overall Total
       totalDonors: rows.length,
       records: rows
@@ -462,44 +497,99 @@ app.get('/api/vargani', (req, res) => {
 });
 
 app.post('/api/vargani', (req, res) => {
-  const { donorName, donorMobile, donorEmail, donorCity, donorPan, amount, amountWords, category, paymentMode, privacy, memoryText, remarks, festivalYear } = req.body;
+  const { donorName, donorMobile, donorEmail, donorCity, donorPan, amount, amountWords, category, paymentMode, privacy, memoryText, remarks, transactionRef, festivalYear } = req.body;
   if (!donorName || !donorMobile || !amount) {
     return res.status(400).json({ success: false, message: 'नाव, मोबाईल आणि रक्कम आवश्यक आहे.' });
   }
 
-  // Restrict categories strictly to 'गणेशोत्सव' or 'गणेश जयंती'
-  const validCategory = (category === 'गणेश जयंती') ? 'गणेश जयंती' : 'गणेशोत्सव';
-  const activeYear = festivalYear || '2026';
-  const validPaymentMode = ['Online', 'Cash', 'Pay Later'].includes(paymentMode) ? paymentMode : 'Online';
+  checkUserAuthorization(req, (isAuthorized) => {
+    let validPaymentMode = ['Online', 'Cash', 'Pay Later'].includes(paymentMode) ? paymentMode : 'Online';
 
-  const receiptNo = `YMM-${activeYear}-${Math.floor(1000 + Math.random() * 9000)}`;
-  const query = `
-    INSERT INTO vargani_records 
-    (receipt_no, donor_name, donor_mobile, donor_email, donor_city, donor_pan, amount, amount_words, category, payment_mode, privacy, memory_text, remarks, festival_year, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const recordStatus = (validPaymentMode === 'Pay Later') ? 'PENDING' : 'VERIFIED';
-
-  db.run(query, [
-    receiptNo, donorName, donorMobile, donorEmail || '', donorCity || 'माळीनगर, देहुगाव', donorPan || '',
-    parseFloat(amount), amountWords || `${amount} रुपये फक्त`, validCategory,
-    validPaymentMode, privacy || 'public', memoryText || '', remarks || '', activeYear, recordStatus
-  ], function(err) {
-    if (err) return res.status(500).json({ success: false, message: 'डेटाबेस एरर' });
-    
-    const record = {
-      id: this.lastID, receiptNo, donorName, donorMobile, donorEmail,
-      amount: parseFloat(amount), amountWords, category: validCategory, paymentMode: validPaymentMode,
-      remarks, festivalYear: activeYear, status: recordStatus,
-      date: new Date().toLocaleDateString('mr-IN', { day: '2-digit', month: 'long', year: 'numeric' })
-    };
-
-    if (donorEmail && donorEmail.includes('@')) {
-      sendCertificateEmail(record);
+    // Enforcement: Normal Public (Unapproved) Users CANNOT select Cash or Pay Later
+    if (!isAuthorized && validPaymentMode !== 'Online') {
+      return res.status(403).json({
+        success: false,
+        message: 'नगद (Cash) आणि नंतर देणे (Pay Later) हे पर्याय केवळ मंडळाच्या मान्यताप्राप्त सदस्यांसाठी राखीव आहेत. कृपया Online पेमेंट निवडा.'
+      });
     }
 
-    res.json({ success: true, message: 'वर्गणी नोंदणी यशस्वी झाली!', data: record });
+    const validCategory = (category === 'गणेश जयंती') ? 'गणेश जयंती' : 'गणेशोत्सव';
+    const activeYear = festivalYear || '2026';
+
+    // Status assignment logic:
+    // 1. Pay Later -> 'PENDING'
+    // 2. Normal Public User Online -> 'PENDING_VERIFICATION' (Needs Admin Check)
+    // 3. Authorized Member/Admin Cash/Online -> 'VERIFIED'
+    let recordStatus = 'VERIFIED';
+    if (validPaymentMode === 'Pay Later') {
+      recordStatus = 'PENDING';
+    } else if (!isAuthorized && validPaymentMode === 'Online') {
+      recordStatus = 'PENDING_VERIFICATION';
+    }
+
+    const receiptNo = `YMM-${activeYear}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const query = `
+      INSERT INTO vargani_records 
+      (receipt_no, donor_name, donor_mobile, donor_email, donor_city, donor_pan, amount, amount_words, category, payment_mode, privacy, memory_text, remarks, transaction_ref, festival_year, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(query, [
+      receiptNo, donorName, donorMobile, donorEmail || '', donorCity || 'माळीनगर, देहुगाव', donorPan || '',
+      parseFloat(amount), amountWords || `${amount} रुपये फक्त`, validCategory,
+      validPaymentMode, privacy || 'public', memoryText || '', remarks || '', transactionRef || '', activeYear, recordStatus
+    ], function(err) {
+      if (err) return res.status(500).json({ success: false, message: 'डेटाबेस एरर' });
+      
+      const record = {
+        id: this.lastID, receiptNo, donorName, donorMobile, donorEmail,
+        amount: parseFloat(amount), amountWords, category: validCategory, paymentMode: validPaymentMode,
+        remarks, transactionRef: transactionRef || '', festivalYear: activeYear, status: recordStatus,
+        date: new Date().toLocaleDateString('mr-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+      };
+
+      if (recordStatus === 'VERIFIED' && donorEmail && donorEmail.includes('@')) {
+        sendCertificateEmail(record);
+      }
+
+      const responseMessage = recordStatus === 'PENDING_VERIFICATION'
+        ? 'तुमची ऑनलाईन वर्गणी यशस्वीपणे नोंदवली आहे! प्रशासकांकडून पेमेंट तपासणी (Verification) पूर्ण होताच तुमची अधिकृत पावती जनरेट होईल.'
+        : 'वर्गणी नोंदणी यशस्वी झाली!';
+
+      res.json({ success: true, message: responseMessage, data: record });
+    });
+  });
+});
+
+// Admin API: Change Vargani Record Status (Verify Online Payment / Pay Later)
+app.put('/api/admin/vargani/:id/status', (req, res) => {
+  const { status } = req.body;
+  const recordId = req.params.id;
+
+  if (!['VERIFIED', 'REJECTED', 'PENDING', 'PENDING_VERIFICATION'].includes(status)) {
+    return res.status(400).json({ success: false, message: 'अवैध स्टेटस.' });
+  }
+
+  db.run("UPDATE vargani_records SET status = ? WHERE id = ?", [status, recordId], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Update failed' });
+
+    db.get("SELECT * FROM vargani_records WHERE id = ?", [recordId], (err, record) => {
+      if (!err && record && status === 'VERIFIED' && record.donor_email) {
+        sendCertificateEmail({
+          receiptNo: record.receipt_no,
+          donorName: record.donor_name,
+          donorMobile: record.donor_mobile,
+          donorEmail: record.donor_email,
+          amount: record.amount,
+          amountWords: record.amount_words,
+          category: record.category,
+          paymentMode: record.payment_mode,
+          festivalYear: record.festival_year
+        });
+      }
+    });
+
+    res.json({ success: true, message: `वर्गणी स्टेटस '${status === 'VERIFIED' ? 'तपासले व स्वीकृत (Verified)' : status}' करण्यात आले आहे!` });
   });
 });
 

@@ -11,25 +11,21 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
   const editionText = settings?.editionText || '४९ वे वर्ष';
   const estYear = toMarathiDigits(settings?.establishmentYear || '1977');
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showTributeModal, setShowTributeModal] = useState(false);
   const [showLogoModal, setShowLogoModal] = useState(false);
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFF8F6]/95 backdrop-blur-md shadow-md no-print border-b border-[#ffe9e5]">
-        {/* Auspicious Top Banner Strip with Center Establishment Year */}
-        <div className="bg-gradient-to-r from-[#d14307] via-[#a93200] to-[#800000] text-white text-center py-1 px-4">
-          <div className="max-w-[1140px] mx-auto flex flex-wrap items-center justify-between gap-2 text-xs font-semibold">
-            {/* Top Left Mini Notice */}
-            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-[#ffe9e5]">
-              <span>॥ मानाचा गणपती ॥</span>
-            </div>
-
+        {/* Auspicious Top Banner Strip with Centered Details */}
+        <div className="bg-gradient-to-r from-[#d14307] via-[#a93200] to-[#800000] text-white text-center py-1 px-2 sm:px-4">
+          <div className="max-w-[1140px] mx-auto flex items-center justify-center text-[10px] sm:text-xs font-semibold">
             {/* Center Establishment Year & Dynamic Edition Count */}
-            <p className="tracking-wider uppercase font-bold flex items-center justify-center gap-2 mx-auto text-xs sm:text-sm">
+            <p className="tracking-wider uppercase font-bold flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-center mx-auto">
               <span>॥ श्री गणेशाय नमः ॥</span>
               <span>•</span>
-              <span className="bg-white/20 px-2 py-0.5 rounded-full text-white font-headline">
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-white font-headline text-[9px] sm:text-xs">
                 स्थापना वर्ष : {estYear} • {editionText}
               </span>
               <span>•</span>
@@ -39,48 +35,51 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
         </div>
 
         {/* Main Navbar Container */}
-        <div className="max-w-[1140px] mx-auto px-4 py-2 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="max-w-[1140px] mx-auto px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-4">
 
-          {/* Left Side: Logo & Brand (Single Click = Home, Double Click = Open Logo Lightbox) */}
+          {/* Left Side: Logo & Brand */}
           <button
             onClick={() => setActiveTab('home')}
             onDoubleClick={(e) => {
               e.stopPropagation();
               setShowLogoModal(true);
             }}
-            className="flex items-center gap-2.5 text-left shrink-0 group/logo select-none"
+            className="flex items-center gap-1.5 sm:gap-2.5 text-left shrink-0 group/logo select-none"
             title="मुख्यपृष्ठावर जाण्यासाठी सिंगल-क्लिक करा • लोगो मोठा करून पाहण्यासाठी डबल-क्लिक करा"
           >
             <img
               alt="यंगस्टार मित्र मंडळ Logo"
-              className="h-14 sm:h-16 w-auto rounded-lg object-contain drop-shadow-md shrink-0 transform group-hover/logo:scale-105 transition-transform duration-300"
+              className="h-10 sm:h-14 md:h-16 w-auto rounded-lg object-contain drop-shadow-md shrink-0 transform group-hover/logo:scale-105 transition-transform duration-300"
               src="/logo.png"
             />
-            <div className="hidden sm:flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-headline text-lg sm:text-xl text-[#a93200] font-bold">
+            <div className="flex flex-col">
+              <span className="text-[11px] sm:text-[13px] font-bold text-[#d14307] tracking-wider text-left mb-0.5">
+                ॥ मानाचा गणपती ॥
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="font-headline text-xs sm:text-lg md:text-xl text-[#a93200] font-bold leading-tight">
                   यंगस्टार मित्र मंडळ
                 </span>
-                <span className="bg-[#fe932c]/20 text-[#904d00] text-[10px] px-2 py-0.5 rounded-full font-bold">
+                <span className="bg-[#fe932c]/20 text-[#904d00] text-[8px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0">
                   {editionText}
                 </span>
               </div>
-              <span className="text-[11px] text-[#5a4139] font-medium">
+              <span className="hidden md:block text-[11px] text-[#5a4139] font-medium">
                 सार्वजनिक गणेशोत्सव {festivalYear} • देहुगाव (चित्र पाहण्यासाठी डबल-क्लिक करा)
               </span>
             </div>
           </button>
 
-          {/* Middle of Header: Shreyas Dada Tribute Photo (Cut-to-cut image, no extra nested frames) */}
+          {/* Middle of Header: Shreyas Dada Tribute Photo */}
           <div
             onClick={() => setShowTributeModal(true)}
-            className="flex items-center gap-2 cursor-pointer group shrink-0 transition-transform hover:scale-105"
+            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0 transition-transform hover:scale-105"
             title="श्रद्धांजली मेसेज पाहण्यासाठी क्लिक करा"
           >
             <img
               src="/Shreyas_dada.jpg"
-              alt="कै. श्रेयस (डिंग्या) बाळू परंदवळ"
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover object-top shadow-xl shrink-0 border-2 border-[#d14307]"
+              alt="कै. श्रेयस (डिंग्या) अशोक परंडवाल"
+              className="w-9 h-9 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl sm:rounded-2xl object-cover object-top shadow-md shrink-0 border-2 border-[#d14307]"
             />
             <div className="hidden lg:flex flex-col text-left">
               <div className="flex items-center gap-1">
@@ -92,14 +91,14 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
                 </span>
               </div>
               <span className="text-[11px] sm:text-xs font-bold text-[#281714] leading-tight drop-shadow-sm mt-0.5 group-hover:text-[#a93200]">
-                कै. श्रेयस (डिंग्या) परंदवळ
+                कै. श्रेयस (डिंग्या) अशोक परंडवाल
               </span>
               <span className="text-[9px] text-[#5a4139] font-semibold">भावपूर्ण आदरांजली 🙏</span>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-2 shrink-0">
+          {/* Desktop Navigation Links (>= md screens) */}
+          <nav className="hidden md:flex items-center gap-2 shrink-0">
             <button
               onClick={() => setActiveTab('home')}
               className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${activeTab === 'home' ? 'bg-[#d14307] text-white shadow-sm' : 'text-[#5a4139] hover:text-[#a93200] hover:bg-[#ffe9e5]'}`}
@@ -120,8 +119,8 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
                 <div className="w-7 h-7 rounded-full bg-[#d14307] text-white flex items-center justify-center text-xs font-bold shrink-0">
                   {userSession.name ? userSession.name.charAt(0) : 'भ'}
                 </div>
-                <div className="hidden sm:flex flex-col text-left">
-                  <span className="font-bold text-[#281714] text-xs leading-tight truncate max-w-[110px]">
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-[#281714] text-xs leading-tight truncate max-w-[100px]">
                     {userSession.name}
                   </span>
                   <span className={`text-[9px] font-bold ${userSession.isApproved || userSession.status === 'APPROVED' ? 'text-[#006b2c]' : 'text-amber-700'}`}>
@@ -154,11 +153,146 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
               className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-1 ${activeTab === 'admin' ? 'bg-[#402b28] text-white' : 'text-[#5a4139] hover:text-[#a93200]'}`}
             >
               <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-              <span className="hidden md:inline">व्यवस्थापक</span>
+              <span>व्यवस्थापक</span>
             </button>
           </nav>
+
+          {/* Mobile Hamburger Menu Toggle Button (< md screens) */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden w-9 h-9 rounded-xl bg-[#d14307] text-white flex items-center justify-center shadow-md shrink-0 focus:outline-none"
+            aria-label="Toggle Navigation Menu"
+          >
+            <span className="material-symbols-outlined text-xl">
+              {isMobileMenuOpen ? 'close' : 'menu'}
+            </span>
+          </button>
         </div>
       </header>
+
+      {/* Mobile Slide-Over Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[90] flex justify-end animate-fadeIn">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+
+          {/* Drawer Panel */}
+          <div className="relative w-4/5 max-w-xs bg-gradient-to-b from-[#FFFDF9] via-[#FFF8F6] to-[#FFE9E5] h-full shadow-2xl p-5 flex flex-col justify-between border-l-2 border-[#d14307] z-10 overflow-y-auto">
+            <div>
+              {/* Drawer Top Branding */}
+              <div className="flex items-center justify-between border-b border-[#fe932c]/30 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+                  <div className="text-left">
+                    <span className="text-[9px] text-[#d14307] font-bold block leading-tight">॥ मानाचा गणपती ॥</span>
+                    <span className="font-headline font-bold text-xs text-[#a93200]">यंगस्टार मित्र मंडळ</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-7 h-7 rounded-full bg-red-100 text-red-700 font-bold flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* User Profile Card */}
+              {userSession ? (
+                <div className="bg-white p-3 rounded-2xl border border-[#fe932c]/50 mb-4 shadow-sm flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#d14307] text-white font-bold flex items-center justify-center text-sm shrink-0">
+                    {userSession.name ? userSession.name.charAt(0) : 'भ'}
+                  </div>
+                  <div className="flex flex-col text-left overflow-hidden">
+                    <span className="font-bold text-[#281714] text-xs truncate">{userSession.name}</span>
+                    <span className={`text-[9px] font-bold ${userSession.isApproved || userSession.status === 'APPROVED' ? 'text-[#006b2c]' : 'text-amber-700'}`}>
+                      {userSession.isApproved || userSession.status === 'APPROVED' ? '✓ ॲक्सेस मंजूर' : '⏳ ॲक्सेस पेंडिंग'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenAuth();
+                  }}
+                  className="w-full bg-[#d14307] hover:bg-[#a93200] text-white p-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 mb-4 shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-base">vpn_key</span>
+                  <span>लॉगिन / नोंदणी करा</span>
+                </button>
+              )}
+
+              {/* Drawer Links */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setActiveTab('home');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full p-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all ${activeTab === 'home' ? 'bg-[#d14307] text-white shadow-md' : 'bg-white text-[#281714] hover:bg-[#ffe9e5]'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">home</span>
+                  <span>मुख्यपृष्ठ (Home)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('vargani');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full p-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all ${activeTab === 'vargani' ? 'bg-[#d14307] text-white shadow-md' : 'bg-white text-[#281714] hover:bg-[#ffe9e5]'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">volunteer_activism</span>
+                  <span>वर्गणी देणगी द्या (Vargani)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('admin');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full p-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all ${activeTab === 'admin' ? 'bg-[#402b28] text-white shadow-md' : 'bg-white text-[#281714] hover:bg-[#ffe9e5]'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                  <span>व्यवस्थापक / खजिनदार (Admin)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowTributeModal(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full p-3 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-3"
+                >
+                  <span className="material-symbols-outlined text-lg text-[#d14307]">workspace_premium</span>
+                  <span>स्मृतीगंध आदरांजली</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="pt-4 border-t border-[#fe932c]/30 text-center">
+              <p className="text-[10px] text-[#5a4139] font-bold">
+                सार्वजनिक गणेशोत्सव {festivalYear} • देहुगाव
+              </p>
+              {userSession && (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('ymm_user_session');
+                    window.location.reload();
+                  }}
+                  className="mt-2 text-xs font-bold text-red-600 bg-red-50 w-full py-1.5 rounded-lg border border-red-200"
+                >
+                  बाहेर पडा (Logout)
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tribute Pop-Up Screen / Modal */}
       {showTributeModal && (
@@ -187,17 +321,17 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
             <div className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border-2 border-[#d14307] shadow-2xl mx-auto mb-4">
               <img
                 src="/Shreyas_dada.jpg"
-                alt="कै. श्रेयस (डिंग्या) बाळू परंदवळ"
+                alt="कै. श्रेयस (डिंग्या) अशोक परंडवाल"
                 className="w-full h-full object-cover object-top"
               />
             </div>
 
             {/* Name & Titles */}
             <h2 className="font-headline text-xl sm:text-2xl text-[#a93200] font-bold mb-0.5">
-              कै. श्रेयस बाळू परंदवळ
+              कै. श्रेयस अशोक परंडवाल
             </h2>
             <p className="text-xs sm:text-sm font-bold text-[#fe932c] mb-3">
-              (उर्फ डिंग्या बाळू परंदवळ)
+              (उर्फ डिंग्या अशोक परंडवाल)
             </p>
 
             {/* Tribute Message Card */}

@@ -156,7 +156,7 @@ export default function VarganiPustak({ records, festivalYear, editionText }) {
             </div>
 
             <div className="text-right">
-              <span className="text-xs font-bold text-[#a93200] block">राहुल शिंदे</span>
+              <span className="text-xs font-bold text-[#a93200] block">कुणाल बिरदवडे</span>
               <span className="text-[10px] text-[#5a4139]">खजिनदार, यंगस्टार मित्र मंडळ</span>
             </div>
           </div>

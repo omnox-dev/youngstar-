@@ -102,9 +102,13 @@ export default function VarganiPage({ settings, userSession }) {
     try {
       const res = await fetch('/api/vargani', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': localStorage.getItem('ymm_admin_token') || localStorage.getItem('ymm_user_token') || ''
+        },
         body: JSON.stringify({
           ...formData,
+          isAuthorized: Boolean(canViewRestricted),
           amountWords: words,
           festivalYear: activeYear
         })
@@ -112,6 +116,8 @@ export default function VarganiPage({ settings, userSession }) {
       const data = await res.json();
 
       if (data.success) {
+        const isPendingVerif = data.data.status === 'PENDING_VERIFICATION';
+
         setConfirmedReceipt({
           receiptNo: data.data.receiptNo,
           donorName: formData.donorName,
@@ -125,6 +131,7 @@ export default function VarganiPage({ settings, userSession }) {
           memoryText: formData.memoryText,
           remarks: formData.remarks,
           festivalYear: activeYear,
+          status: data.data.status,
           date: new Date().toLocaleDateString('mr-IN', { day: '2-digit', month: 'long', year: 'numeric' })
         });
 
@@ -141,7 +148,12 @@ export default function VarganiPage({ settings, userSession }) {
           remarks: ''
         });
 
-        alert(`🎉 पावती क्र. ${data.data.receiptNo} यशस्वीपणे जनरेट झाली आहे!`);
+        if (isPendingVerif) {
+          alert(`📲 तुमची ऑनलाईन वर्गणी नोंदवली आहे!\n\nटीप: प्रशासकांकडून ऑनलाईन पेमेंट तपासणी (Verification) पूर्ण होताच तुमची अधिकृत पावती (क्र. ${data.data.receiptNo}) जनरेट होईल.`);
+        } else {
+          alert(`🎉 पावती क्र. ${data.data.receiptNo} यशस्वीपणे जनरेट झाली आहे!`);
+        }
+
         fetchRecords();
 
         setTimeout(() => {
@@ -308,11 +320,11 @@ export default function VarganiPage({ settings, userSession }) {
                 value={formData.amount} onChange={handleChange}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-[#fff0ee] border border-[#ffe9e5] text-sm font-bold text-[#a93200]"
               />
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="grid grid-cols-3 sm:flex flex-wrap gap-2 mt-2">
                 {[501, 1008, 2501, 5001, 11000].map(val => (
                   <button 
                     key={val} type="button" onClick={() => setAmountPreset(val)}
-                    className={`px-2.5 py-1 text-xs rounded-md font-bold transition-all ${parseInt(formData.amount) === val ? 'bg-[#d14307] text-white' : 'bg-[#ffe9e5] text-[#281714] hover:bg-[#d14307] hover:text-white'}`}
+                    className={`px-2 py-1.5 text-xs rounded-md font-bold transition-all text-center ${parseInt(formData.amount) === val ? 'bg-[#d14307] text-white' : 'bg-[#ffe9e5] text-[#281714] hover:bg-[#d14307] hover:text-white'}`}
                   >
                     ₹{val.toLocaleString('mr-IN')}
                   </button>
@@ -320,19 +332,39 @@ export default function VarganiPage({ settings, userSession }) {
               </div>
             </div>
 
-            {/* REQUIREMENT 7: Payment Options - Online, Cash, Pay Later */}
+            {/* Payment Options - Online (Public) vs Cash/Pay Later (Authorized Only) */}
             <div>
-              <label className="block text-xs font-bold text-[#281714] mb-1">
-                भरणा पद्धत (Payment Option) <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-[#281714]">
+                  भरणा पद्धत (Payment Option) <span className="text-red-500">*</span>
+                </label>
+                {canViewRestricted ? (
+                  <span className="text-[10px] bg-[#006b2c]/10 text-[#006b2c] font-bold px-2 py-0.5 rounded-full">
+                    ✓ ॲक्सेस मंजूर (पूर्ण पर्याय उपलब्ध)
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                    🔒 सर्वसामान्यांसाठी ऑनलाईन भरणा
+                  </span>
+                )}
+              </div>
               <select 
                 name="paymentMode" value={formData.paymentMode} onChange={handleChange}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-[#fff0ee] border border-[#ffe9e5] text-sm font-bold text-[#281714]"
               >
                 <option value="Online">📱 ऑनलाइन (Online - UPI / NetBanking / QR Code)</option>
-                <option value="Cash">💵 नगद (Cash Payment at Mandal Pandal)</option>
-                <option value="Pay Later">⏳ नंतर देणे / शिल्लक (Pay Later)</option>
+                {canViewRestricted && (
+                  <>
+                    <option value="Cash">💵 नगद (Cash Payment at Mandal Pandal)</option>
+                    <option value="Pay Later">⏳ नंतर देणे / शिल्लक (Pay Later)</option>
+                  </>
+                )}
               </select>
+              {!canViewRestricted && (
+                <p className="text-[10px] text-[#a93200] font-semibold mt-1">
+                  * टीप: नगद (Cash) आणि नंतर देणे (Pay Later) हे भरणा पर्याय केवळ मंडळाच्या मान्यताप्राप्त सदस्यांसाठी (Authorized Members) आहेत.
+                </p>
+              )}
             </div>
 
             {/* REQUIREMENT 7: Remarks Field (Visible Only to Granted Access People) */}
@@ -493,7 +525,7 @@ export default function VarganiPage({ settings, userSession }) {
               
               <div className="text-right text-[10px] text-[#5A4139]">
                 <div className="inline-block border-b border-[#281714] pb-0.5 mb-0.5 font-bold text-[#A93200]">
-                  राहुल शिंदे (खजिनदार)
+                  कुणाल बिरदवडे (खजिनदार)
                 </div>
                 <span className="block font-semibold">अध्यक्ष व कार्यकारिणी, यंगस्टार मित्र मंडळ</span>
               </div>

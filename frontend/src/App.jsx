@@ -54,7 +54,7 @@ export default function App() {
         onOpenAuth={() => setIsAuthOpen(true)}
       />
       
-      <main className="pt-28 flex-grow">
+      <main className="pt-20 sm:pt-28 flex-grow">
         {activeTab === 'home' && (
           <Home 
             setActiveTab={setActiveTab} 

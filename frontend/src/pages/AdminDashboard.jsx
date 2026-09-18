@@ -22,6 +22,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const [filterYear, setFilterYear] = useState('2026');
   const [filterPaymentMode, setFilterPaymentMode] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMandalRecord, setSelectedMandalRecord] = useState(null);
 
@@ -52,7 +53,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
     if (isAuthenticated) {
       fetchVarganiRecords();
     }
-  }, [filterYear, filterPaymentMode, filterCategory, searchQuery]);
+  }, [filterYear, filterPaymentMode, filterCategory, filterStatus, searchQuery]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -99,7 +100,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
 
   const fetchVarganiRecords = async () => {
     try {
-      const url = `/api/vargani?year=${filterYear}&paymentMode=${filterPaymentMode}&category=${filterCategory}&search=${encodeURIComponent(searchQuery)}`;
+      const url = `/api/vargani?year=${filterYear}&paymentMode=${filterPaymentMode}&category=${filterCategory}&status=${filterStatus}&search=${encodeURIComponent(searchQuery)}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -331,34 +332,35 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   return (
     <div className="max-w-[1140px] mx-auto px-4 py-8 flex flex-col gap-6">
       
-      {/* Top Banner */}
-      <div className="bg-[#402b28] text-white p-6 rounded-2xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" className="h-12 w-auto rounded-lg border border-[#fe932c] object-contain bg-white/90 p-0.5"/>
-          <div>
-            <span className="text-xs text-[#fe932c] font-bold block">॥ मानाचा गणपती • प्रशासकीय नियंत्रण कक्ष ॥</span>
-            <h1 className="font-headline text-xl sm:text-2xl font-bold">यंगस्टार मित्र मंडळ - व्यवस्थापन दालन</h1>
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-[#402b28] via-[#5a3a35] to-[#281714] p-6 rounded-2xl text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[#fe932c] text-xs font-bold mb-2 backdrop-blur-sm">
+            <span className="material-symbols-outlined text-[16px]">verified_user</span>
+            <span>यंगस्टार मित्र मंडळ - प्रशासक कंट्रोल पॅनेल ({filterYear})</span>
           </div>
+          <h1 className="font-headline text-2xl font-bold text-[#ffdcc3]">
+            सार्वजनिक गणेशोत्सव डिजिटल व्यवस्थापन मंच
+          </h1>
+          <p className="text-xs text-[#ffe9e5] mt-0.5">
+            खजिनदार / व्यवस्थापक: <b>{adminUser?.name || 'कुणाल बिरदवडे'}</b> ({adminUser?.role || 'खजिनदार'})
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-[#d14307] text-white text-xs px-3 py-1.5 rounded-xl font-bold">
-            {adminUser?.name || 'राहुल शिंदे'} ({adminUser?.role || 'खजिनदार'})
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="bg-white/10 hover:bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px]">logout</span>
-            <span>बाहेर पडा</span>
-          </button>
-        </div>
+
+        <button 
+          onClick={handleLogout}
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+        >
+          <span className="material-symbols-outlined text-[16px]">logout</span>
+          <span>बाहेर पडा (Logout)</span>
+        </button>
       </div>
 
-      {/* Admin Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-[#ffe9e5] pb-3 no-print">
+      {/* Navigation Sub-Tabs */}
+      <div className="flex overflow-x-auto gap-2 border-b border-[#ffe9e5] pb-2 no-print shrink-0 py-1 scrollbar-none">
         <button 
           onClick={() => setAdminTab('vargani')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${adminTab === 'vargani' ? 'bg-[#d14307] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${adminTab === 'vargani' ? 'bg-[#d14307] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
         >
           <span className="material-symbols-outlined text-[18px]">receipt_long</span>
           <span>वर्गणी व देणगी नोंदवही</span>
@@ -366,7 +368,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
 
         <button 
           onClick={() => setAdminTab('users')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${adminTab === 'users' ? 'bg-[#d14307] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${adminTab === 'users' ? 'bg-[#d14307] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
         >
           <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
           <span>युझर ॲक्सेस मंजुरी ({pendingUsers.filter(u => u.status === 'PENDING').length})</span>
@@ -374,7 +376,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
 
         <button 
           onClick={() => setAdminTab('events')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${adminTab === 'events' ? 'bg-[#d14307] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${adminTab === 'events' ? 'bg-[#d14307] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
         >
           <span className="material-symbols-outlined text-[18px]">event</span>
           <span>कार्यक्रम व स्मरणपत्रे</span>
@@ -400,7 +402,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
       {/* TAB 1: VARGANI REGISTRY WITH FILTERS & FINANCIAL BREAKDOWN */}
       {adminTab === 'vargani' && (
         <div className="flex flex-col gap-6">
-          {/* REQUIREMENT 8: Live Financial Breakdown Cards */}
+          {/* Live Financial Breakdown Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-[#ffe9e5] shadow-sm">
               <span className="text-xs font-bold text-[#5a4139] block mb-1">एकूण प्राप्त रक्कम (Received)</span>
@@ -409,9 +411,9 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
             </div>
             
             <div className="bg-white p-5 rounded-2xl border border-[#ffe9e5] shadow-sm">
-              <span className="text-xs font-bold text-[#5a4139] block mb-1">एकूण शिल्लक रक्कम (Pay Later)</span>
+              <span className="text-xs font-bold text-[#5a4139] block mb-1">एकूण शिल्लक / तपासणी बाकी</span>
               <span className="font-headline text-2xl font-bold text-amber-600">₹ {financials.pendingAmount.toLocaleString('mr-IN')}</span>
-              <span className="text-[11px] text-amber-700 font-bold block mt-1">⏳ नंतर देणे / ठरलेली वर्गणी</span>
+              <span className="text-[11px] text-amber-700 font-bold block mt-1">⏳ नंतर देणे व तपासणी बाकी ऑनलाईन</span>
             </div>
 
             <div className="bg-white p-5 rounded-2xl border border-[#ffe9e5] shadow-sm">
@@ -421,12 +423,12 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
             </div>
           </div>
 
-          {/* REQUIREMENT 8: Advanced Filter Controls & Export Bar */}
+          {/* Advanced Filter Controls & Export Bar */}
           <div className="bg-white rounded-2xl border border-[#ffe9e5] shadow-md p-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 pb-4 border-b border-[#ffe9e5]">
               <div>
                 <h2 className="font-headline text-lg font-bold text-[#281714]">वर्गणी व देणगी नोंदवही (Filtered Vargani Registry)</h2>
-                <span className="text-xs text-[#5a4139]">नगद, ऑनलाइन, Pay Later व शेरा (Remarks) निहाय फिल्टर करा</span>
+                <span className="text-xs text-[#5a4139]">नगद, ऑनलाइन, Pay Later, पेमेंट तपासणी व शेरा निहाय फिल्टर करा</span>
               </div>
 
               {/* Download Excel & PDF Export Buttons */}
@@ -477,6 +479,19 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
               </div>
 
               <div>
+                <label className="block text-[11px] font-bold text-[#281714] mb-1">पावती स्थिती (Status)</label>
+                <select 
+                  value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-white border text-xs text-[#281714]"
+                >
+                  <option value="ALL">सर्व स्थिती</option>
+                  <option value="PENDING_VERIFICATION">⏳ ऑनलाईन पेमेंट तपासणी बाकी</option>
+                  <option value="VERIFIED">✓ स्वीकृत / जनरेट पावती (Verified)</option>
+                  <option value="PENDING">🔒 नंतर देणे (Pay Later)</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-[11px] font-bold text-[#281714] mb-1">उत्सव कारण (Reason)</label>
                 <select 
                   value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
@@ -488,7 +503,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                 </select>
               </div>
 
-              <div>
+              <div className="md:col-span-4">
                 <label className="block text-[11px] font-bold text-[#281714] mb-1">नाव / मोबाईल / शेरा शोधा</label>
                 <input 
                   type="text" 
@@ -500,7 +515,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
               </div>
             </div>
 
-            {/* Vargani Records Table with Remarks Column */}
+            {/* Vargani Records Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -511,13 +526,13 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                     <th className="p-3 font-bold">उत्सव कारण</th>
                     <th className="p-3 font-bold">रक्कम</th>
                     <th className="p-3 font-bold">भरणा मोड</th>
-                    <th className="p-3 font-bold">शेरा / टिप्पणी (Remarks)</th>
-                    <th className="p-3 font-bold">मंडळ पावती (Status)</th>
+                    <th className="p-3 font-bold">शेरा / टिप्पणी</th>
+                    <th className="p-3 font-bold">मंडळ पावती व तपासणी क्रिया (Actions)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {records.map((r) => (
-                    <tr key={r.id} className="border-b hover:bg-[#fff8f6] transition-colors">
+                    <tr key={r.id} className={`border-b transition-colors ${r.status === 'PENDING_VERIFICATION' ? 'bg-amber-50/70 hover:bg-amber-100/70' : 'hover:bg-[#fff8f6]'}`}>
                       <td className="p-3 font-bold text-[#a93200]">{r.receipt_no}</td>
                       <td className="p-3 font-bold text-[#281714]">{r.donor_name}</td>
                       <td className="p-3 text-[#5a4139]">{r.donor_mobile}</td>
@@ -530,10 +545,32 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                       </td>
                       <td className="p-3 text-[#281714] italic">{r.remarks || '—'}</td>
                       <td className="p-3">
-                        {r.payment_mode === 'Pay Later' || r.payment_status === 'PENDING' ? (
-                          <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 inline-flex items-center gap-1">
-                            <span>🔒 बाकी (Pay Later)</span>
-                          </span>
+                        {r.status === 'PENDING_VERIFICATION' ? (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className="text-[10px] font-bold text-amber-900 bg-amber-200 px-2 py-0.5 rounded border border-amber-400">
+                              ⏳ ऑनलाईन पेमेंट तपासणी बाकी
+                            </span>
+                            <button 
+                              onClick={() => handleVerifyVargani(r.id, 'VERIFIED')}
+                              className="text-[10px] font-bold text-white bg-[#00873a] hover:bg-[#006b2c] px-2.5 py-1 rounded shadow-sm flex items-center gap-1 transition"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                              <span>✓ तपासले व पावती द्या</span>
+                            </button>
+                          </div>
+                        ) : r.payment_mode === 'Pay Later' || r.status === 'PENDING' ? (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                              🔒 बाकी (Pay Later)
+                            </span>
+                            <button 
+                              onClick={() => handleVerifyVargani(r.id, 'VERIFIED')}
+                              className="text-[10px] font-bold text-white bg-amber-600 hover:bg-amber-700 px-2 py-1 rounded shadow-sm flex items-center gap-1 transition"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">payments</span>
+                              <span>💵 रक्कम जमा (Mark Paid)</span>
+                            </button>
+                          </div>
                         ) : (
                           <button 
                             onClick={() => setSelectedMandalRecord({

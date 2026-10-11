@@ -13,6 +13,36 @@
   }
 }
 
+/* ========================================================
+   REMOVE ALL NATIVE BROWSER SCROLLBARS EVERYWHERE ON SCREEN
+   ======================================================== */
+html,
+body,
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Edge, Opera */
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+/* Custom sleek class kept for backward compatibility if needed */
+.custom-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+}
+
 @media print {
   /* Force exact background colors, images, and overlays to print */
   * {

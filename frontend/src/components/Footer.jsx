@@ -16,7 +16,7 @@ export default function Footer({ setActiveTab }) {
             <span className="font-headline text-lg text-[#a93200] font-bold">यंगस्टार मित्र मंडळ</span>
           </div>
           <p className="text-xs text-[#5a4139] leading-relaxed">
-            माळीनगर - देहुगाव, ता. हवेली, जि. पुणे - ४१२१०९<br/>
+            माळीनगर - श्रीक्षेत्र देहुगाव, ता. हवेली, जि. पुणे - ४१२१०९<br/>
             नोंदणी क्र.: महा/पुणे/१२३४/१९९४<br/>
             स्थापना: वर्ष १९७७
           </p>
@@ -58,7 +58,7 @@ export default function Footer({ setActiveTab }) {
 
       <div className="bg-[#ffe2dd] py-3 px-4">
         <div className="max-w-[1140px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#5a4139]">
-          <p>© २०२६ <b>यंगस्टार मित्र मंडळ</b>, माळीनगर - देहुगाव, पुणे. सर्व हक्क राखीव.</p>
+          <p>© २०२६ <b>यंगस्टार मित्र मंडळ</b>, माळीनगर - श्रीक्षेत्र देहुगाव, पुणे. सर्व हक्क राखीव.</p>
           <p className="text-[#a93200] font-bold">॥ मानाचा गणपती • सांस्कृतिक महोत्सव २०२६ ॥</p>
         </div>
       </div>

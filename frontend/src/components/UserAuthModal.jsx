@@ -160,7 +160,7 @@ export default function UserAuthModal({ isOpen, onClose, userSession, setUserSes
               <input 
                 type="text" name="address"
                 value={formData.address} onChange={handleChange}
-                placeholder="उदा. माळीनगर - देहुगाव, पुणे"
+                placeholder="उदा. माळीनगर - श्रीक्षेत्र देहुगाव, पुणे"
                 className="w-full px-3 py-2 rounded-lg bg-[#fff0ee] border text-xs text-[#281714]"
               />
             </div>

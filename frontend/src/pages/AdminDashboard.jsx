@@ -26,6 +26,11 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMandalRecord, setSelectedMandalRecord] = useState(null);
 
+  // Edit Vargani Modal State (Admin Exclusive)
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   // User Registrations State
   const [pendingUsers, setPendingUsers] = useState([]);
 
@@ -44,9 +49,23 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
     const storedUser = localStorage.getItem('ymm_admin_user');
     if (token && storedUser) {
       setIsAuthenticated(true);
-      setAdminUser(JSON.parse(storedUser));
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (settings?.khajindarName && parsed.name !== settings.khajindarName) {
+          parsed.name = settings.khajindarName;
+          if (settings.khajindarRole) parsed.role = settings.khajindarRole;
+          localStorage.setItem('ymm_admin_user', JSON.stringify(parsed));
+        }
+        setAdminUser(parsed);
+      } catch (e) {
+        setAdminUser(JSON.parse(storedUser));
+      }
       fetchAllAdminData();
     }
+  }, [settings]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
@@ -117,9 +136,110 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
     }
   };
 
+  // 1. Verify Vargani Status (Verify Online Payment / Mark Paid)
+  const handleVerifyVargani = async (recordId, newStatus) => {
+    try {
+      const token = localStorage.getItem('ymm_admin_token');
+      const res = await fetch(`/api/admin/vargani/${recordId}/status`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        fetchVarganiRecords();
+      } else {
+        alert(data.message || 'स्टेटस बदलताना त्रुटी.');
+      }
+    } catch (e) {
+      alert('स्टेटस बदलताना त्रुटी.');
+    }
+  };
+
+  // 2. Open Edit Vargani Modal
+  const handleOpenEditVargani = (record) => {
+    setEditingRecord({
+      id: record.id,
+      receiptNo: record.receipt_no,
+      donorName: record.donor_name,
+      donorMobile: record.donor_mobile || '',
+      donorEmail: record.donor_email || '',
+      amount: record.amount,
+      amountWords: record.amount_words,
+      category: record.category || 'गणेशोत्सव',
+      paymentMode: record.payment_mode || 'Cash',
+      remarks: record.remarks || '',
+      status: record.status || 'VERIFIED'
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // 3. Save Edited Vargani Record (PUT)
+  const handleSaveEditVargani = async (e) => {
+    e.preventDefault();
+    if (!editingRecord) return;
+    setIsSavingEdit(true);
+    try {
+      const token = localStorage.getItem('ymm_admin_token');
+      const res = await fetch(`/api/admin/vargani/${editingRecord.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify(editingRecord)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        setIsEditModalOpen(false);
+        setEditingRecord(null);
+        fetchVarganiRecords();
+      } else {
+        alert(data.message || 'नोंद अद्यतनित करताना त्रुटी आली.');
+      }
+    } catch (err) {
+      alert('सर्व्हर त्रुटी: नोंद अद्यतनित होऊ शकली नाही.');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // 4. Delete Vargani Record (DELETE)
+  const handleDeleteVargani = async (recordId, receiptNo, donorName) => {
+    if (!confirm(`पावती क्र. ${receiptNo} (${donorName}) ही नोंद कायमस्वरूपी हटवायची (Delete) आहे का?\nही क्रिया पूर्ववत करता येणार नाही.`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('ymm_admin_token');
+      const res = await fetch(`/api/admin/vargani/${recordId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token || ''
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        fetchVarganiRecords();
+      } else {
+        alert(data.message || 'नोंद हटवता आली नाही.');
+      }
+    } catch (err) {
+      alert('सर्व्हर त्रुटी.');
+    }
+  };
+
   const fetchPendingUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users');
+      const token = localStorage.getItem('ymm_admin_token');
+      const res = await fetch('/api/admin/users', {
+        headers: { 'Authorization': token || '' }
+      });
       const data = await res.json();
       if (data.success) {
         setPendingUsers(data.users);
@@ -129,9 +249,13 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
 
   const updateUserStatus = async (userId, newStatus) => {
     try {
+      const token = localStorage.getItem('ymm_admin_token');
       const res = await fetch(`/api/admin/users/${userId}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
         body: JSON.stringify({ status: newStatus })
       });
       const data = await res.json();
@@ -139,6 +263,31 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
       fetchPendingUsers();
     } catch (e) {
       alert('अपडेट त्रुटी.');
+    }
+  };
+
+  // Delete User Registration (DELETE)
+  const handleDeleteUser = async (userId, userName) => {
+    if (!confirm(`'${userName}' यांची युझर नोंद कायमस्वरूपी हटवायची (Delete) आहे का?`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('ymm_admin_token');
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token || ''
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        fetchPendingUsers();
+      } else {
+        alert(data.message || 'युझर हटवता आला नाही.');
+      }
+    } catch (err) {
+      alert('सर्व्हर त्रुटी.');
     }
   };
 
@@ -153,9 +302,13 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const handleAddEvent = async (e) => {
     e.preventDefault();
     try {
+      const token = localStorage.getItem('ymm_admin_token');
       const res = await fetch('/api/admin/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
         body: JSON.stringify({ ...newEvent, festivalYear: filterYear })
       });
       const data = await res.json();
@@ -170,16 +323,24 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const handleDeleteEvent = async (id) => {
     if (!confirm('हा कार्यक्रम हटवायचा आहे का?')) return;
     try {
-      await fetch(`/api/admin/events/${id}`, { method: 'DELETE' });
+      const token = localStorage.getItem('ymm_admin_token');
+      await fetch(`/api/admin/events/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': token || '' }
+      });
       fetchEventsList();
     } catch (e) {}
   };
 
   const handleSendReminder = async (eventObj) => {
     try {
+      const token = localStorage.getItem('ymm_admin_token');
       const res = await fetch('/api/admin/events/send-reminders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
         body: JSON.stringify({ eventId: eventObj.id, eventTitle: eventObj.title, eventDate: eventObj.event_date })
       });
       const data = await res.json();
@@ -200,9 +361,13 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const handleAddPhoto = async (e) => {
     e.preventDefault();
     try {
+      const token = localStorage.getItem('ymm_admin_token');
       const res = await fetch('/api/admin/gallery', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
         body: JSON.stringify({ ...newPhoto, festivalYear: filterYear })
       });
       const data = await res.json();
@@ -217,7 +382,11 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const handleDeletePhoto = async (id) => {
     if (!confirm('हा फोटो हटवायचा आहे का?')) return;
     try {
-      await fetch(`/api/admin/gallery/${id}`, { method: 'DELETE' });
+      const token = localStorage.getItem('ymm_admin_token');
+      await fetch(`/api/admin/gallery/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': token || '' }
+      });
       fetchGalleryList();
     } catch (e) {}
   };
@@ -225,9 +394,13 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const handleUpdateYear = async (e) => {
     e.preventDefault();
     try {
+      const token = localStorage.getItem('ymm_admin_token');
       const res = await fetch('/api/admin/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
         body: JSON.stringify({ festivalYear: settingYear, establishmentYear: settingEstYear })
       });
       const data = await res.json();
@@ -343,7 +516,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
             सार्वजनिक गणेशोत्सव डिजिटल व्यवस्थापन मंच
           </h1>
           <p className="text-xs text-[#ffe9e5] mt-0.5">
-            खजिनदार / व्यवस्थापक: <b>{adminUser?.name || 'कुणाल बिरदवडे'}</b> ({adminUser?.role || 'खजिनदार'})
+            खजिनदार / व्यवस्थापक: <b>{settings?.khajindarName || adminUser?.name || import.meta.env.VITE_KHAJINDAR_NAME || 'कुणाल बिरदवडे'}</b> ({settings?.khajindarRole || adminUser?.role || import.meta.env.VITE_KHAJINDAR_ROLE || 'खजिनदार'})
           </p>
         </div>
 
@@ -545,47 +718,63 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                       </td>
                       <td className="p-3 text-[#281714] italic">{r.remarks || '—'}</td>
                       <td className="p-3">
-                        {r.status === 'PENDING_VERIFICATION' ? (
-                          <div className="flex flex-col gap-1.5 items-start">
-                            <span className="text-[10px] font-bold text-amber-900 bg-amber-200 px-2 py-0.5 rounded border border-amber-400">
-                              ⏳ ऑनलाईन पेमेंट तपासणी बाकी
-                            </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {r.status === 'PENDING_VERIFICATION' ? (
                             <button 
                               onClick={() => handleVerifyVargani(r.id, 'VERIFIED')}
+                              title="पेमेंट तपासून पावती द्या"
                               className="text-[10px] font-bold text-white bg-[#00873a] hover:bg-[#006b2c] px-2.5 py-1 rounded shadow-sm flex items-center gap-1 transition"
                             >
                               <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                              <span>✓ तपासले व पावती द्या</span>
+                              <span>✓ पावती द्या</span>
                             </button>
-                          </div>
-                        ) : r.payment_mode === 'Pay Later' || r.status === 'PENDING' ? (
-                          <div className="flex flex-col gap-1.5 items-start">
-                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                              🔒 बाकी (Pay Later)
-                            </span>
+                          ) : r.payment_mode === 'Pay Later' || r.status === 'PENDING' ? (
                             <button 
                               onClick={() => handleVerifyVargani(r.id, 'VERIFIED')}
+                              title="रक्कम जमा दाखवा"
                               className="text-[10px] font-bold text-white bg-amber-600 hover:bg-amber-700 px-2 py-1 rounded shadow-sm flex items-center gap-1 transition"
                             >
                               <span className="material-symbols-outlined text-[13px]">payments</span>
-                              <span>💵 रक्कम जमा (Mark Paid)</span>
+                              <span>💵 जमा</span>
                             </button>
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => setSelectedMandalRecord({
-                              receiptNo: r.receipt_no,
-                              donorName: r.donor_name,
-                              amount: r.amount,
-                              amountWords: r.amount_words,
-                              date: r.date || r.created_at
-                            })}
-                            className="text-[10px] font-bold text-white bg-amber-600 hover:bg-amber-700 px-2 py-1 rounded shadow-sm flex items-center gap-1"
+                          ) : (
+                            <button 
+                              onClick={() => setSelectedMandalRecord({
+                                receiptNo: r.receipt_no,
+                                donorName: r.donor_name,
+                                amount: r.amount,
+                                amountWords: r.amount_words,
+                                date: r.date || r.created_at,
+                                status: r.status
+                              })}
+                              title="मंडळ पावती पहा"
+                              className="text-[10px] font-bold text-white bg-amber-600 hover:bg-amber-700 px-2 py-1 rounded shadow-sm flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">workspace_premium</span>
+                              <span>✨ पावती</span>
+                            </button>
+                          )}
+
+                          {/* मुख्य प्रशासक: नोंद बदलणे (Edit) */}
+                          <button
+                            onClick={() => handleOpenEditVargani(r)}
+                            title="नोंद बदला (Update Record)"
+                            className="text-[10px] font-bold text-[#a93200] bg-orange-100 hover:bg-orange-200 border border-orange-300 px-2 py-1 rounded shadow-sm flex items-center gap-0.5 transition"
                           >
-                            <span className="material-symbols-outlined text-[13px]">workspace_premium</span>
-                            <span>✨ पावती पहा</span>
+                            <span className="material-symbols-outlined text-[13px]">edit</span>
+                            <span>बदला</span>
                           </button>
-                        )}
+
+                          {/* मुख्य प्रशासक: नोंद हटवणे (Delete) */}
+                          <button
+                            onClick={() => handleDeleteVargani(r.id, r.receipt_no, r.donor_name)}
+                            title="नोंद हटवा (Delete Record)"
+                            className="text-[10px] font-bold text-red-700 bg-red-100 hover:bg-red-200 border border-red-300 px-2 py-1 rounded shadow-sm flex items-center gap-0.5 transition"
+                          >
+                            <span className="material-symbols-outlined text-[13px]">delete</span>
+                            <span>हटवा</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -615,7 +804,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                   <th className="p-3 font-bold">ई-मेल</th>
                   <th className="p-3 font-bold">पत्ता</th>
                   <th className="p-3 font-bold">सद्य स्थिती</th>
-                  <th className="p-3 font-bold">ॲक्सेस कृती (Grant Access)</th>
+                  <th className="p-3 font-bold">ॲक्सेस कृती (Grant Access / Actions)</th>
                 </tr>
               </thead>
               <tbody>
@@ -630,18 +819,30 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                         {u.status === 'APPROVED' ? '✓ स्वीकृत' : (u.status === 'REJECTED' ? '✕ अमान्य' : '⏳ पेंडिंग')}
                       </span>
                     </td>
-                    <td className="p-3 flex items-center gap-2">
+                    <td className="p-3 flex items-center gap-1.5 flex-wrap">
+                      {u.status !== 'APPROVED' && (
+                        <button 
+                          onClick={() => updateUserStatus(u.id, 'APPROVED')}
+                          className="bg-[#00873a] hover:bg-[#006b2c] text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm"
+                        >
+                          मंजूर
+                        </button>
+                      )}
+                      {u.status !== 'REJECTED' && (
+                        <button 
+                          onClick={() => updateUserStatus(u.id, 'REJECTED')}
+                          className="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shadow-sm"
+                        >
+                          अमान्य
+                        </button>
+                      )}
                       <button 
-                        onClick={() => updateUserStatus(u.id, 'APPROVED')}
-                        className="bg-[#00873a] hover:bg-[#006b2c] text-white px-2.5 py-1 rounded text-[11px] font-bold"
+                        onClick={() => handleDeleteUser(u.id, u.name)}
+                        title="युझर नोंद कायमस्वरूपी हटवा"
+                        className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[11px] font-bold shadow-sm flex items-center gap-0.5"
                       >
-                        Grant Access (मंजूर)
-                      </button>
-                      <button 
-                        onClick={() => updateUserStatus(u.id, 'REJECTED')}
-                        className="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-[11px] font-bold"
-                      >
-                        अमान्य करा
+                        <span className="material-symbols-outlined text-[13px]">delete</span>
+                        <span>हटवा</span>
                       </button>
                     </td>
                   </tr>
@@ -880,6 +1081,151 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
         onClose={() => setSelectedMandalRecord(null)} 
         record={selectedMandalRecord} 
       />
+
+      {/* मुख्य प्रशासक: वर्गणी नोंद बदलण्यासाठी पॉपअप (Edit Vargani Modal) */}
+      {isEditModalOpen && editingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-[#ffe9e5] shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#a93200] via-[#d14307] to-[#fe932c] p-4 text-white flex justify-between items-center">
+              <div>
+                <h3 className="font-headline font-bold text-base flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-lg">edit_note</span>
+                  <span>वर्गणी नोंद बदला (Edit Vargani Record)</span>
+                </h3>
+                <p className="text-xs text-white/90">
+                  पावती क्र: <span className="font-mono font-bold text-amber-200">{editingRecord.receiptNo}</span>
+                </p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => { setIsEditModalOpen(false); setEditingRecord(null); }}
+                className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white text-base font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditVargani} className="p-5 flex flex-col gap-3 max-h-[80vh] overflow-y-auto text-xs">
+              <div>
+                <label className="block font-bold text-[#281714] mb-1">भाविकाचे पूर्ण नाव *</label>
+                <input 
+                  type="text" required
+                  value={editingRecord.donorName}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, donorName: e.target.value })}
+                  placeholder="उदा. श्री. राहुल सचिन देशमुख"
+                  className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 focus:border-[#a93200] font-bold text-[#281714]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-[#281714] mb-1">मोबाईल नंबर</label>
+                  <input 
+                    type="tel"
+                    value={editingRecord.donorMobile}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, donorMobile: e.target.value })}
+                    placeholder="९८७६५४३२१०"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 focus:border-[#a93200] font-mono text-[#281714]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-[#281714] mb-1">ई-मेल (Email)</label>
+                  <input 
+                    type="email"
+                    value={editingRecord.donorEmail}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, donorEmail: e.target.value })}
+                    placeholder="devotee@example.com"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 focus:border-[#a93200] text-[#281714]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-[#281714] mb-1">वर्गणी रक्कम (₹) *</label>
+                  <input 
+                    type="number" required min="1"
+                    value={editingRecord.amount}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, amount: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 focus:border-[#a93200] font-bold text-[#d14307] text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-[#281714] mb-1">उत्सव वर्गणी कारण *</label>
+                  <select
+                    value={editingRecord.category}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 font-bold bg-white text-[#281714]"
+                  >
+                    <option value="गणेशोत्सव">गणेशोत्सव</option>
+                    <option value="गणेश जयंती">गणेश जयंती</option>
+                    <option value="महाप्रसाद">महाप्रसाद</option>
+                    <option value="आरती / अभिषेक">आरती / अभिषेक</option>
+                    <option value="इतर देणगी">इतर देणगी</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-[#281714] mb-1">भरणा पद्धत *</label>
+                  <select
+                    value={editingRecord.paymentMode}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, paymentMode: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 font-bold bg-white text-[#281714]"
+                  >
+                    <option value="Online">ऑनलाइन (Online)</option>
+                    <option value="Cash">नगद (Cash)</option>
+                    <option value="Pay Later">नंतर देणे (Pay Later)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-[#281714] mb-1">पावती स्थिती (Status) *</label>
+                  <select
+                    value={editingRecord.status}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, status: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 font-bold bg-white text-[#281714]"
+                  >
+                    <option value="VERIFIED">✓ स्वीकृत / जनरेट पावती (VERIFIED)</option>
+                    <option value="PENDING_VERIFICATION">⏳ ऑनलाईन पेमेंट तपासणी बाकी (PENDING_VERIFICATION)</option>
+                    <option value="PENDING">🔒 नंतर देणे बाकी (PENDING)</option>
+                    <option value="REJECTED">✕ अमान्य (REJECTED)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-[#281714] mb-1">शेरा / पावती टीप (Remarks)</label>
+                <textarea 
+                  rows="2"
+                  value={editingRecord.remarks}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, remarks: e.target.value })}
+                  placeholder="उदा. विशेष देणगीदार किंवा पत्ता नोंद..."
+                  className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 text-[#281714]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-3 border-t border-[#ffe9e5] justify-end items-center">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditModalOpen(false); setEditingRecord(null); }}
+                  className="px-4 py-2 rounded-lg bg-neutral-200 hover:bg-neutral-300 font-bold text-[#5a4139] transition"
+                >
+                  रद्द करा
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEdit}
+                  className="px-5 py-2 rounded-lg bg-[#00873a] hover:bg-[#006b2c] text-white font-bold shadow-md transition disabled:opacity-50 flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[15px]">check</span>
+                  <span>{isSavingEdit ? 'जतन करत आहे...' : 'बदल जतन करा (Save Changes)'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

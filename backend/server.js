@@ -148,17 +148,55 @@ db.serialize(() => {
     )
   `);
 
+  // Seed initial events if empty
+  db.get("SELECT COUNT(*) as count FROM event_chart", (err, row) => {
+    if (row && row.count === 0) {
+      const initialEvents = [
+        ['१४ सप्टेंबर २०२६', 'सकाळी ९:०० वा.', 'श्रींची प्रतिष्ठापना व भव्य आगमन मिरवणूक', 'वाजतगाजत पारंपरिक ढोल-ताशांच्या गजरात श्री गणरायाची भव्य प्रतिष्ठापना.', '/pandal_hero.jpg', '2026'],
+        ['१५ सप्टेंबर २०२६', 'सायं ७:३० वा.', 'सामूहिक अथर्वशीर्ष पठण व महाआरती', 'महिला मंडळ व भाविकांच्या उपस्थितीत सामूहिक अथर्वशीर्ष आवर्तन व दिपपूजा.', '/aarti.jpg', '2026'],
+        ['१६ सप्टेंबर २०२६', 'सकाळी ९ ते २', 'भव्य मोफत रक्तदान व आरोग्य तपासणी शिबिर', 'सामाजिक बांधिलकीतून भव्य रक्तदान शिबिर व तज्ज्ञ डॉक्टरांकडून मोफत तपासणी.', '/pandal_hero.jpg', '2026'],
+        ['१८ सप्टेंबर २०२६', 'दुपारी १२ ते ४', 'भव्य मोदक महाप्रसाद वितरण सोहळा', 'श्रीक्षेत्र देहुगाव परिसरातील हजारो भाविकांसाठी अन्नदान व मोदक महाप्रसाद.', '/mahaprasad.jpg', '2026'],
+        ['२० सप्टेंबर २०२६', 'सायं ६:३० वा.', 'बालगोपाळांचे सांस्कृतिक कार्यक्रम व गुणगौरव', 'स्थानिक कलाकारांचे भजन, गायन आणि विद्यार्थ्यांचा शैक्षणिक सत्कार सोहळा.', '/aarti.jpg', '2026'],
+        ['२४ सप्टेंबर २०२६', 'दुपारी ३:०० वा.', 'भव्य सांगता विसर्जन मिरवणूक (ढोल-ताशा)', 'गुलाल आणि भक्तीच्या रंगात बाप्पाला भावपूर्ण निरोप व विसर्जन मिरवणूक.', '/dhol_tasha.jpg', '2026']
+      ];
+      initialEvents.forEach(ev => {
+        db.run("INSERT INTO event_chart (event_date, event_time, title, description, photo_url, festival_year) VALUES (?, ?, ?, ?, ?, ?)", ev);
+      });
+    }
+  });
+
+  // Seed initial photo gallery if empty across multiple years
+  db.get("SELECT COUNT(*) as count FROM photo_gallery", (err, row) => {
+    if (row && row.count === 0) {
+      const initialPhotos = [
+        ['भव्य मंडप व श्रींचे विलोभनीय रूप', 'श्रीक्षेत्र देहुगाव येथील मानाच्या गणपतीचा नयनरम्य उत्सव देखावा.', '/pandal_hero.jpg', '2026'],
+        ['सामूहिक संध्या महाआरती', 'शेकडो भाविकांच्या उपस्थितीत पार पडलेली भावपूर्ण संध्या आरती.', '/aarti.jpg', '2026'],
+        ['मोदक महाप्रसाद सेवा', 'उत्सवातील महाप्रसाद वितरण व स्वयंसेवकांची अखंड सेवा.', '/mahaprasad.jpg', '2026'],
+        ['२०२५ भव्य विसर्जन मिरवणूक', 'मागील वर्षातील अविस्मरणीय ढोल-ताशा वादन व निरोप सोहळा.', '/dhol_tasha.jpg', '2025'],
+        ['२०२५ श्रींचे सुवर्ण अलंकार दर्शन', '२०२५ मधील गणेशोत्सवाचा दिव्य सुवर्ण शृंगार.', '/pandal_hero.jpg', '2025'],
+        ['२०२४ महाप्रसाद व रक्तदान सोहळा', 'सामाजिक बांधिलकी जपणारा २०२४ मधील आरोग्य उपक्रम.', '/mahaprasad.jpg', '2024'],
+        ['२०२४ पारंपरिक ढोल-ताशा पथक', 'तरुणाईचा उत्साह आणि पारंपरिक मराठी संस्कृतीचे दर्शन.', '/dhol_tasha.jpg', '2024']
+      ];
+      initialPhotos.forEach(p => {
+        db.run("INSERT INTO photo_gallery (title, description, photo_url, festival_year) VALUES (?, ?, ?, ?)", p);
+      });
+    }
+  });
+
   // Seed initial admin user using ENV variables
   const adminUser = process.env.ADMIN_USERNAME || 'admin';
   const adminPass = process.env.ADMIN_PASSWORD || 'youngstar2026';
+  const khajindarName = process.env.KHAJINDAR_NAME || 'कुणाल बिरदवडे';
+  const khajindarRole = process.env.KHAJINDAR_ROLE || 'खजिनदार / व्यवस्थापक';
+
   db.get("SELECT COUNT(*) as count FROM admin_users", (err, row) => {
     if (row && row.count === 0) {
       db.run(
         "INSERT INTO admin_users (username, password, name, role) VALUES (?, ?, ?, ?)",
-        [adminUser, adminPass, 'कुणाल बिरदवडे', 'खजिनदार / व्यवस्थापक']
+        [adminUser, adminPass, khajindarName, khajindarRole]
       );
     } else {
-      db.run("UPDATE admin_users SET name = 'कुणाल बिरदवडे' WHERE username = 'admin'");
+      db.run("UPDATE admin_users SET name = ?, role = ? WHERE username = ?", [khajindarName, khajindarRole, adminUser]);
     }
   });
 });
@@ -202,7 +240,7 @@ async function sendCertificateEmail(record) {
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 4px double #d14307; padding: 25px; background: #fff8f6; border-radius: 12px; text-align: center;">
       <h1 style="color: #a93200; margin-bottom: 5px;">॥ मानाचा गणपती ॥</h1>
       <h2 style="color: #904d00; font-size: 24px; margin-top: 0;">यंगस्टार मित्र मंडळ</h2>
-      <p style="color: #5a4139; font-weight: bold;">सार्वजनिक गणेशोत्सव ${record.festivalYear || '२०२६'} • माळीनगर - देहुगाव, ता. हवेली, जि. पुणे - ४१२१०९</p>
+      <p style="color: #5a4139; font-weight: bold;">सार्वजनिक गणेशोत्सव ${record.festivalYear || '२०२६'} • माळीनगर - श्रीक्षेत्र देहुगाव, ता. हवेली, जि. पुणे - ४१२१०९</p>
       <hr style="border: 0; border-top: 2px solid #fe932c; margin: 15px 0;">
       <h3 style="color: #006b2c; font-size: 18px;">॥ श्री गणेश कृपा वर्गणी व सेवा समर्पण प्रमाणपत्र ॥</h3>
       <p style="text-align: left;">सस्नेह नमस्कार <b>${record.donorName}</b> जी,</p>
@@ -280,12 +318,18 @@ app.get('/api/settings', (req, res) => {
       establishmentYear: estYear,
       mandalName: settingsObj.mandal_name || 'यंगस्टार मित्र मंडळ',
       editionNo: editionNo,
-      editionText: editionText // e.g. "४९ वे वर्ष"
+      editionText: editionText, // e.g. "४९ वे वर्ष"
+      khajindarName: process.env.KHAJINDAR_NAME || 'कुणाल बिरदवडे',
+      khajindarRole: process.env.KHAJINDAR_ROLE || 'खजिनदार / व्यवस्थापक'
     });
   });
 });
 
 app.post('/api/admin/settings', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   const { festivalYear, establishmentYear } = req.body;
   if (!festivalYear) return res.status(400).json({ success: false, message: 'वर्ष आवश्यक आहे.' });
 
@@ -354,6 +398,10 @@ app.post('/api/user/login', (req, res) => {
 });
 
 app.get('/api/admin/users', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   db.all("SELECT id, name, mobile, email, address, status, created_at FROM user_registrations ORDER BY id DESC", [], (err, rows) => {
     if (err) return res.status(500).json({ success: false, message: 'Database error' });
     res.json({ success: true, users: rows });
@@ -361,6 +409,10 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 app.put('/api/admin/users/:id/status', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   const { status } = req.body;
   const userId = req.params.id;
   if (!['APPROVED', 'REJECTED', 'PENDING'].includes(status)) {
@@ -370,6 +422,18 @@ app.put('/api/admin/users/:id/status', (req, res) => {
   db.run("UPDATE user_registrations SET status = ? WHERE id = ?", [status, userId], function(err) {
     if (err) return res.status(500).json({ success: false, message: 'Update failed' });
     res.json({ success: true, message: `युझर ॲक्सेस ${status === 'APPROVED' ? 'स्वीकृत' : status} करण्यात आला आहे!` });
+  });
+});
+
+app.delete('/api/admin/users/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  const userId = req.params.id;
+  db.run("DELETE FROM user_registrations WHERE id = ?", [userId], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Delete failed' });
+    res.json({ success: true, message: 'युझर नोंद यशस्वीपणे हटवली (Deleted) गेली!' });
   });
 });
 
@@ -535,7 +599,7 @@ app.post('/api/vargani', (req, res) => {
     `;
 
     db.run(query, [
-      receiptNo, donorName, donorMobile, donorEmail || '', donorCity || 'माळीनगर, देहुगाव', donorPan || '',
+      receiptNo, donorName, donorMobile, donorEmail || '', donorCity || 'माळीनगर, श्रीक्षेत्र देहुगाव', donorPan || '',
       parseFloat(amount), amountWords || `${amount} रुपये फक्त`, validCategory,
       validPaymentMode, privacy || 'public', memoryText || '', remarks || '', transactionRef || '', activeYear, recordStatus
     ], function(err) {
@@ -563,6 +627,10 @@ app.post('/api/vargani', (req, res) => {
 
 // Admin API: Change Vargani Record Status (Verify Online Payment / Pay Later)
 app.put('/api/admin/vargani/:id/status', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   const { status } = req.body;
   const recordId = req.params.id;
 
@@ -593,17 +661,71 @@ app.put('/api/admin/vargani/:id/status', (req, res) => {
   });
 });
 
+// Admin API: Update complete Vargani record
+app.put('/api/admin/vargani/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  const recordId = req.params.id;
+  const { donorName, donorMobile, donorEmail, amount, amountWords, category, paymentMode, remarks, status } = req.body;
+
+  if (!donorName || !amount) {
+    return res.status(400).json({ success: false, message: 'नाव व रक्कम आवश्यक आहे.' });
+  }
+
+  const query = `
+    UPDATE vargani_records 
+    SET donor_name = ?, donor_mobile = ?, donor_email = ?, amount = ?, amount_words = ?, category = ?, payment_mode = ?, remarks = ?, status = ?
+    WHERE id = ?
+  `;
+
+  db.run(query, [
+    donorName, donorMobile || '', donorEmail || '', parseFloat(amount) || 0,
+    amountWords || `${amount} रुपये फक्त`, category || 'गणेशोत्सव', paymentMode || 'Online',
+    remarks || '', status || 'VERIFIED', recordId
+  ], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Update failed', error: err.message });
+    res.json({ success: true, message: 'वर्गणी नोंद यशस्वीपणे अद्यतनित (Updated) झाली!' });
+  });
+});
+
+// Admin API: Delete Vargani record
+app.delete('/api/admin/vargani/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  const recordId = req.params.id;
+
+  db.run("DELETE FROM vargani_records WHERE id = ?", [recordId], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Delete failed', error: err.message });
+    res.json({ success: true, message: 'वर्गणी नोंद यशस्वीपणे हटवली (Deleted) गेली!' });
+  });
+});
+
 // 5. Event Chart API
 app.get('/api/events', (req, res) => {
   const { year } = req.query;
-  const activeYear = year || '2026';
-  db.all("SELECT * FROM event_chart WHERE festival_year = ? ORDER BY id ASC", [activeYear], (err, rows) => {
+  let query = "SELECT * FROM event_chart";
+  const params = [];
+  if (year && year !== 'ALL') {
+    query += " WHERE festival_year = ? ORDER BY id ASC";
+    params.push(year);
+  } else {
+    query += " ORDER BY festival_year DESC, id ASC";
+  }
+  db.all(query, params, (err, rows) => {
     if (err) return res.status(500).json({ success: false, message: 'Database error' });
     res.json({ success: true, events: rows });
   });
 });
 
 app.post('/api/admin/events', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   const { eventDate, eventTime, title, description, photoUrl, festivalYear } = req.body;
   if (!eventDate || !title) {
     return res.status(400).json({ success: false, message: 'तारीख व शीर्षक आवश्यक आहे.' });
@@ -617,6 +739,10 @@ app.post('/api/admin/events', (req, res) => {
 });
 
 app.delete('/api/admin/events/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   db.run("DELETE FROM event_chart WHERE id = ?", [req.params.id], function(err) {
     if (err) return res.status(500).json({ success: false, message: 'Delete error' });
     res.json({ success: true, message: 'कार्यक्रम हटवला गेला.' });
@@ -624,6 +750,10 @@ app.delete('/api/admin/events/:id', (req, res) => {
 });
 
 app.post('/api/admin/events/send-reminders', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   const { eventId, eventTitle, eventDate } = req.body;
   db.all("SELECT donor_name, donor_mobile, donor_email FROM vargani_records UNION SELECT name as donor_name, mobile as donor_mobile, email as donor_email FROM user_registrations", [], (err, rows) => {
     const totalReminders = rows ? rows.length : 0;
@@ -637,14 +767,25 @@ app.post('/api/admin/events/send-reminders', (req, res) => {
 // 6. Photo Gallery API
 app.get('/api/gallery', (req, res) => {
   const { year } = req.query;
-  const activeYear = year || '2026';
-  db.all("SELECT * FROM photo_gallery WHERE festival_year = ? ORDER BY id DESC", [activeYear], (err, rows) => {
+  let query = "SELECT * FROM photo_gallery";
+  const params = [];
+  if (year && year !== 'ALL') {
+    query += " WHERE festival_year = ? ORDER BY id DESC";
+    params.push(year);
+  } else {
+    query += " ORDER BY festival_year DESC, id DESC";
+  }
+  db.all(query, params, (err, rows) => {
     if (err) return res.status(500).json({ success: false, message: 'Database error' });
     res.json({ success: true, gallery: rows });
   });
 });
 
 app.post('/api/admin/gallery', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   const { title, description, photoUrl, festivalYear } = req.body;
   if (!title || !photoUrl) {
     return res.status(400).json({ success: false, message: 'शीर्षक व फोटो URL आवश्यक आहे.' });
@@ -658,6 +799,10 @@ app.post('/api/admin/gallery', (req, res) => {
 });
 
 app.delete('/api/admin/gallery/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
   db.run("DELETE FROM photo_gallery WHERE id = ?", [req.params.id], function(err) {
     if (err) return res.status(500).json({ success: false, message: 'Delete error' });
     res.json({ success: true, message: 'फोटो गॅलरीतून हटवला गेला.' });

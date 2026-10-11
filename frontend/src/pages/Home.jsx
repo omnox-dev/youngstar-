@@ -16,6 +16,10 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
   const [isImageOnlyMode, setIsImageOnlyMode] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     fetchEvents();
     fetchGallery();
     fetchVargani();
@@ -102,29 +106,27 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
 
   return (
     <div className="flex flex-col w-full min-h-screen">
-      
+
       {/* 1. Hero Section with Dynamic Edition, Scroll Animation & Click Image-Only Mode */}
-      <section 
-        ref={heroRef} 
+      <section
+        ref={heroRef}
         onClick={() => setIsImageOnlyMode(prev => !prev)}
         className="relative w-full overflow-hidden min-h-[540px] flex items-center justify-center pt-8 pb-16 cursor-pointer select-none group"
         title={isImageOnlyMode ? "क्लिक करून मजकूर पुन्हा दाखवा" : "क्लिक करून केवळ फोटो पाहा"}
       >
         {/* Hero Image */}
-        <div 
-          className={`absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000 ${
-            showHeroText ? 'scale-105' : 'scale-100'
-          }`}
-          style={{ backgroundImage: `url('/pandal_hero.jpg')` }}
+        <div
+          className={`absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000 ${showHeroText ? 'scale-105' : 'scale-100'
+            }`}
+          style={{ backgroundImage: `url('/pandal_hero.jpg')`, backgroundPosition: 'center 95%' }}
         ></div>
-        
+
         {/* Overlay Gradient (Lightens in Image-Only Mode for full clarity) */}
-        <div 
-          className={`absolute inset-0 z-10 transition-opacity duration-700 ${
-            isImageOnlyMode 
-              ? 'bg-black/20 opacity-40' 
-              : 'bg-gradient-to-t from-black/90 via-black/60 to-black/40 opacity-100'
-          }`}
+        <div
+          className={`absolute inset-0 z-10 transition-opacity duration-700 ${isImageOnlyMode
+            ? 'bg-black/20 opacity-40'
+            : 'bg-gradient-to-t from-black/90 via-black/60 to-black/40 opacity-100'
+            }`}
         ></div>
 
         {/* Small floating tip when in image-only mode */}
@@ -136,14 +138,28 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
         )}
 
         <div className="relative z-20 max-w-[1140px] mx-auto px-4 text-center flex flex-col items-center">
-          {/* Badge */}
-          <div 
+          {/* Lord Ganesha Logo on Home Page */}
+          <div
             style={{ transitionDelay: showHeroText ? '0ms' : '0ms' }}
-            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-[#fe932c]/50 shadow-md mb-6 text-[#fe932c] transition-all duration-700 ease-out transform ${
-              showHeroText 
-                ? 'opacity-100 translate-y-0 scale-100' 
-                : 'opacity-0 -translate-y-6 scale-95 pointer-events-none'
-            }`}
+            className={`transition-all duration-700 ease-out transform mb-3 ${showHeroText
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 -translate-y-8 scale-90 pointer-events-none'
+              }`}
+          >
+            <img
+              src="/ganesha_logo.png"
+              alt="श्री गणेश"
+              className="w-16 sm:w-20 md:w-24 h-auto mx-auto drop-shadow-[0_4px_20px_rgba(254,147,44,0.7)]"
+            />
+          </div>
+
+          {/* Badge */}
+          <div
+            style={{ transitionDelay: showHeroText ? '100ms' : '0ms' }}
+            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-[#fe932c]/50 shadow-md mb-6 text-[#fe932c] transition-all duration-700 ease-out transform ${showHeroText
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 -translate-y-6 scale-95 pointer-events-none'
+              }`}
           >
             <span className="material-symbols-outlined text-[18px] text-[#fe932c]">workspace_premium</span>
             <span className="text-xs sm:text-sm font-bold">॥ मानाचा गणपती • {editionText} ॥</span>
@@ -152,51 +168,47 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
           </div>
 
           {/* Title - Youngstar Mitra Mandal */}
-          <h1 
+          <h1
             style={{ transitionDelay: showHeroText ? '150ms' : '0ms' }}
-            className={`font-headline text-3xl sm:text-5xl text-white max-w-3xl font-bold tracking-tight mb-4 drop-shadow-lg leading-tight transition-all duration-700 ease-out transform ${
-              showHeroText 
-                ? 'opacity-100 translate-y-0 scale-100' 
-                : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
-            }`}
+            className={`font-headline text-3xl sm:text-5xl text-white max-w-3xl font-bold tracking-tight mb-4 drop-shadow-lg leading-tight transition-all duration-700 ease-out transform ${showHeroText
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
+              }`}
           >
             यंगस्टार मित्र मंडळ आपले मनःपूर्वक स्वागत करत आहे
           </h1>
 
           {/* Subheading */}
-          <p 
+          <p
             style={{ transitionDelay: showHeroText ? '300ms' : '0ms' }}
-            className={`font-headline text-lg sm:text-2xl text-[#fe932c] font-bold mb-4 drop-shadow-md transition-all duration-700 ease-out transform ${
-              showHeroText 
-                ? 'opacity-100 translate-y-0 scale-100' 
-                : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
-            }`}
+            className={`font-headline text-lg sm:text-2xl text-[#fe932c] font-bold mb-4 drop-shadow-md transition-all duration-700 ease-out transform ${showHeroText
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
+              }`}
           >
             गणपती बाप्पा मोरया! मंगलमूर्ती मोरया!
           </p>
 
           {/* Description */}
-          <p 
+          <p
             style={{ transitionDelay: showHeroText ? '450ms' : '0ms' }}
-            className={`text-sm sm:text-base text-white/90 font-medium max-w-2xl mx-auto mb-8 leading-relaxed drop-shadow transition-all duration-700 ease-out transform ${
-              showHeroText 
-                ? 'opacity-100 translate-y-0 scale-100' 
-                : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
-            }`}
+            className={`text-sm sm:text-base text-white/90 font-medium max-w-2xl mx-auto mb-8 leading-relaxed drop-shadow transition-all duration-700 ease-out transform ${showHeroText
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
+              }`}
           >
-            माळीनगर - देहुगाव, ता. हवेली, जि. पुणे येथे अखंड भक्ती, परंपरा आणि सामाजिक बांधिलकीची {editionText} सोहळा. बाप्पाच्या दर्शनाचा व उत्सवाचा दिव्य आनंद घ्या.
+            माळीनगर - श्रीक्षेत्र देहुगाव, ता. हवेली, जि. पुणे येथे अखंड भक्ती, परंपरा आणि सामाजिक बांधिलकीची {editionText} सोहळा. बाप्पाच्या दर्शनाचा व उत्सवाचा दिव्य आनंद घ्या.
           </p>
 
           {/* Quick Action options */}
-          <div 
+          <div
             style={{ transitionDelay: showHeroText ? '600ms' : '0ms' }}
-            className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-700 ease-out transform ${
-              showHeroText 
-                ? 'opacity-100 translate-y-0 scale-100' 
-                : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
-            }`}
+            className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-700 ease-out transform ${showHeroText
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
+              }`}
           >
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveTab('vargani');
@@ -206,7 +218,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
               🌸 वर्गणी / देणगी द्या
             </button>
             {userSession ? (
-              <div 
+              <div
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/70 backdrop-blur-md px-6 py-2 rounded-xl border-2 border-[#fe932c] flex items-center gap-3 text-white shadow-lg"
               >
@@ -221,7 +233,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                 </div>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenAuth();
@@ -245,7 +257,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Option 1: Login / Register / Profile */}
-            <div 
+            <div
               onClick={onOpenAuth}
               className="bg-white p-5 rounded-2xl shadow-sm border border-[#ffe9e5] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
             >
@@ -268,7 +280,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
             </div>
 
             {/* Option 2: Give Donations */}
-            <div 
+            <div
               onClick={() => setActiveTab('vargani')}
               className="bg-white p-5 rounded-2xl shadow-sm border border-[#ffe9e5] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
             >
@@ -287,8 +299,16 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
             </div>
 
             {/* Option 3: Graphic Vargani Pustak */}
-            <div 
-              onClick={() => setShowPustak(!showPustak)}
+            <div
+              onClick={() => {
+                const nextState = !showPustak;
+                setShowPustak(nextState);
+                if (nextState) {
+                  setTimeout(() => {
+                    document.getElementById('vargani-pustak-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }
+              }}
               className="bg-white p-5 rounded-2xl shadow-sm border border-[#ffe9e5] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
@@ -301,16 +321,13 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                 </p>
               </div>
               <span className="text-xs font-bold text-[#904d00] mt-4 flex items-center gap-1 group-hover:underline">
-                {showPustak ? 'पुस्तक बंद करा' : 'पावती पुस्तक उघडा →'}
+                {showPustak ? 'पुस्तक बंद करा ▲' : 'पावती पुस्तक उघडा (Full Frame) →'}
               </span>
             </div>
 
             {/* Option 4: Events & Reminders */}
-            <div 
-              onClick={() => {
-                const el = document.getElementById('event-chart-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
+            <div
+              onClick={() => setActiveTab('schedule')}
               className="bg-white p-5 rounded-2xl shadow-sm border border-[#ffe9e5] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
@@ -319,24 +336,25 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                 </div>
                 <h3 className="font-headline text-base font-bold text-[#281714]">४) कार्यक्रम व स्मरणपत्रे</h3>
                 <p className="text-xs text-[#5a4139] mt-1">
-                  उत्सवातील दैनंदिन धार्मिक कार्यक्रम, वेळ व रिमाइंडर अपडेट्स.
+                  उत्सवातील दैनंदिन धार्मिक कार्यक्रम, वेळ व रिमाइंडर कॅलेंडर.
                 </p>
               </div>
               <span className="text-xs font-bold text-[#402b28] mt-4 flex items-center gap-1 group-hover:underline">
-                कार्यक्रम चार्ट पहा ↓
+                कार्यक्रम तक्ता पहा →
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Graphic Vargani Pustak Toggleable View */}
+      {/* Graphic Vargani Pustak Full Frame View (Only Verified & Complete Records) */}
       {showPustak && (
-        <section className="max-w-[1140px] mx-auto px-4 w-full">
-          <VarganiPustak 
-            records={varganiRecords} 
-            festivalYear={festivalYear} 
-            editionText={editionText} 
+        <section id="vargani-pustak-section" className="max-w-[1240px] mx-auto px-4 w-full scroll-mt-24">
+          <VarganiPustak
+            records={(varganiRecords || []).filter(r => r.status === 'VERIFIED' && r.payment_mode !== 'Pay Later')}
+            festivalYear={festivalYear}
+            editionText={editionText}
+            onClose={() => setShowPustak(false)}
           />
         </section>
       )}
@@ -344,7 +362,7 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
       {/* 3. REQUIREMENT 3: Event Chart BEFORE Gallery */}
       <section id="event-chart-section" className="w-full py-12 bg-[#fff8f6]">
         <div className="max-w-[1140px] mx-auto px-4 flex flex-col gap-6">
-          
+
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 pb-2 border-b border-[#ffe9e5]">
             <div>
               <span className="text-xs font-bold text-[#a93200] uppercase tracking-wider flex items-center gap-1">
@@ -355,9 +373,14 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                 गणेशोत्सव {festivalYear} कार्यक्रम तक्ता
               </h2>
             </div>
-            <span className="text-xs text-[#5a4139] bg-[#ffe9e5] px-3 py-1 rounded-full font-bold">
-              वेळ, तारीख व फोटोंसह थेट तक्ता
-            </span>
+
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className="bg-[#d14307] hover:bg-[#a93200] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+              <span>सर्व कार्यक्रम पहा (Show All) →</span>
+            </button>
           </div>
 
           {events.length === 0 ? (
@@ -370,10 +393,10 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {events.map((ev, idx) => (
+              {events.slice(0, 4).map((ev, idx) => (
                 <div key={idx} className="bg-white rounded-2xl border border-[#ffe9e5] shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group">
                   <div className="h-44 overflow-hidden relative">
-                    <img src={ev.photo_url || '/pandal_hero.jpg'} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                    <img src={ev.photo_url || '/pandal_hero.jpg'} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute top-3 left-3 bg-[#a93200] text-white text-[11px] px-2.5 py-1 rounded-full font-bold shadow-md">
                       {ev.event_date}
                     </div>
@@ -381,14 +404,14 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
 
                   <div className="p-4 flex flex-col justify-between flex-grow gap-2">
                     <h3 className="font-headline text-base font-bold text-[#281714]">{ev.title}</h3>
-                    <p className="text-xs text-[#5a4139]">{ev.description}</p>
-                    
+                    <p className="text-xs text-[#5a4139] line-clamp-2">{ev.description}</p>
+
                     <div className="flex items-center justify-between pt-3 border-t border-[#ffe9e5] text-xs">
                       <span className="flex items-center gap-1 font-bold text-[#d14307]">
                         <span className="material-symbols-outlined text-[16px]">schedule</span>
                         <span>{ev.event_time}</span>
                       </span>
-                      <span className="text-[11px] text-[#006b2c] font-bold">माळीनगर, देहुगाव</span>
+                      <span className="text-[11px] text-[#006b2c] font-bold">माळीनगर, श्रीक्षेत्र देहुगाव</span>
                     </div>
                   </div>
                 </div>
@@ -396,14 +419,25 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
             </div>
           )}
 
+          {/* Show All Events CTA Button */}
+          <div className="text-center pt-2">
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className="bg-white hover:bg-[#ffe9e5] text-[#a93200] border-2 border-[#fe932c] px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition inline-flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">calendar_add_on</span>
+              <span>संपूर्ण कार्यक्रम तक्ता पहा व कॅलेंडरमध्ये जोडा (Show All & Add to Calendar) →</span>
+            </button>
+          </div>
+
         </div>
       </section>
 
       {/* 4. REQUIREMENT 3: Gallery Section AT THE BOTTOM */}
       <section className="w-full py-12 bg-[#ffe9e5] border-t border-[#ffe2dd]">
         <div className="max-w-[1140px] mx-auto px-4 flex flex-col gap-6">
-          
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-2 border-b border-[#ffe2dd]">
             <div>
               <span className="text-xs font-bold text-[#a93200] uppercase tracking-wider flex items-center gap-1">
                 <span className="material-symbols-outlined text-[18px]">photo_library</span>
@@ -413,9 +447,14 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
                 यंगस्टार उत्सव {festivalYear} फोटो गॅलरी
               </h2>
             </div>
-            <span className="text-xs text-[#5a4139] font-medium">
-              प्रशासकांद्वारे फोटोंची नियमित भर घालण्यात येते.
-            </span>
+
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className="bg-[#d14307] hover:bg-[#a93200] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">collections</span>
+              <span>सर्व फोटो पहा (Show All Gallery) →</span>
+            </button>
           </div>
 
           {gallery.length === 0 ? (
@@ -428,26 +467,41 @@ export default function Home({ setActiveTab, settings, userSession, onOpenAuth }
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {gallery.map((g, idx) => (
-                <div key={g.id || idx} className="bg-white rounded-2xl overflow-hidden shadow-md border border-[#ffe9e5] group flex flex-col">
+              {gallery.slice(0, 3).map((g, idx) => (
+                <div
+                  key={g.id || idx}
+                  onClick={() => setActiveTab('gallery')}
+                  className="bg-white rounded-2xl overflow-hidden shadow-md border border-[#ffe9e5] group flex flex-col cursor-pointer hover:shadow-lg transition-all"
+                >
                   <div className="h-48 overflow-hidden relative">
-                    <img 
-                      src={g.photo_url || '/aarti.jpg'} 
-                      alt={g.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    <img
+                      src={g.photo_url || '/aarti.jpg'}
+                      alt={g.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
                   <div className="p-4 flex flex-col justify-between flex-grow">
                     <div>
                       <span className="text-[10px] text-[#d14307] font-bold uppercase tracking-wider">गणेशोत्सव फोटो</span>
                       <h3 className="font-headline text-base font-bold text-[#281714] mt-0.5">{g.title}</h3>
-                      <p className="text-xs text-[#5a4139] mt-1">{g.description}</p>
+                      <p className="text-xs text-[#5a4139] mt-1 line-clamp-2">{g.description}</p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
+
+          {/* Show All Gallery CTA Button */}
+          <div className="text-center pt-2">
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className="bg-white hover:bg-[#ffe9e5] text-[#a93200] border-2 border-[#fe932c] px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition inline-flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">photo_library</span>
+              <span>वर्षनिहाय संपूर्ण फोटो गॅलरी पहा (Year-wise Gallery) →</span>
+            </button>
+          </div>
 
         </div>
       </section>

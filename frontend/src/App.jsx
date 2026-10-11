@@ -4,8 +4,10 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import VarganiPage from './pages/VarganiPage';
 import SchedulePage from './pages/SchedulePage';
+import GalleryPage from './pages/GalleryPage';
 import AdminDashboard from './pages/AdminDashboard';
 import UserAuthModal from './components/UserAuthModal';
+import CustomScrollbarManager from './components/CustomScrollbarManager';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -20,6 +22,15 @@ export default function App() {
     editionNo: 49,
     editionText: '४९ वे वर्ष'
   });
+
+  // Scroll to top of page immediately whenever activeTab changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, 10);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   // Fetch settings & user session on mount
   useEffect(() => {
@@ -75,6 +86,12 @@ export default function App() {
             settings={settings}
           />
         )}
+        {activeTab === 'gallery' && (
+          <GalleryPage 
+            setActiveTab={setActiveTab} 
+            settings={settings}
+          />
+        )}
         {activeTab === 'admin' && (
           <AdminDashboard 
             settings={settings}
@@ -91,6 +108,8 @@ export default function App() {
         userSession={userSession}
         setUserSession={setUserSession}
       />
+
+      <CustomScrollbarManager />
     </div>
   );
 }

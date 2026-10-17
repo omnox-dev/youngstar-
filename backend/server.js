@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
+const { romanToDevanagari, devanagariToRoman, matchesDevanagariSearch } = require('./transliteration');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -197,6 +198,34 @@ db.serialize(() => {
       );
     } else {
       db.run("UPDATE admin_users SET name = ?, role = ? WHERE username = ?", [khajindarName, khajindarRole, adminUser]);
+    }
+  });
+
+  // Devotee WhatsApp Broadcast Contacts Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS broadcast_contacts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      mobile TEXT NOT NULL,
+      group_tag TEXT DEFAULT 'भाविक',
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Seed initial broadcast contacts if empty
+  db.get("SELECT COUNT(*) as count FROM broadcast_contacts", (err, row) => {
+    if (row && row.count === 0) {
+      const initialContacts = [
+        ['ज्ञानेश्वर महाराज भक्त', '9822012345', 'भाविक', 'देहूगाव ग्रामस्थ'],
+        ['संतोष तुकाराम मोरे', '9890123456', 'कार्यकर्ता', 'उत्सव समिती सदस्य'],
+        ['राजेंद्र एकनाथ शिंदे', '9881234567', 'देणगीदार', 'महाप्रसाद अन्नदाता'],
+        ['सुप्रिया गणेश काळभोर', '9823456789', 'भाविक', 'महिला मंडळ'],
+        ['अमोल विठ्ठल बिरदवडे', '9922334455', 'पदाधिकारी', 'मार्गदर्शक']
+      ];
+      initialContacts.forEach(c => {
+        db.run("INSERT INTO broadcast_contacts (name, mobile, group_tag, notes) VALUES (?, ?, ?, ?)", c);
+      });
     }
   });
 });
@@ -516,10 +545,11 @@ app.get('/api/vargani', (req, res) => {
     params.push(status);
   }
 
-  if (search) {
-    query += " AND (donor_name LIKE ? OR receipt_no LIKE ? OR donor_mobile LIKE ? OR remarks LIKE ?)";
-    const s = `%${search}%`;
-    params.push(s, s, s, s);
+  if (search && search.trim()) {
+    const sRaw = search.trim();
+    const sDev = romanToDevanagari(sRaw);
+    query += " AND (donor_name LIKE ? OR donor_name LIKE ? OR receipt_no LIKE ? OR donor_mobile LIKE ? OR remarks LIKE ? OR remarks LIKE ?)";
+    params.push(`%${sRaw}%`, `%${sDev}%`, `%${sRaw}%`, `%${sRaw}%`, `%${sRaw}%`, `%${sDev}%`);
   }
 
   query += " ORDER BY id DESC";
@@ -530,11 +560,21 @@ app.get('/api/vargani', (req, res) => {
       return res.status(500).json({ success: false, message: 'Database error', details: err.message });
     }
 
+    let recordsToUse = rows || [];
+    if (search && search.trim()) {
+      recordsToUse = recordsToUse.filter(r =>
+        matchesDevanagariSearch(r.donor_name, search) ||
+        (r.receipt_no && r.receipt_no.toLowerCase().includes(search.toLowerCase())) ||
+        (r.donor_mobile && r.donor_mobile.includes(search.trim())) ||
+        (r.remarks && matchesDevanagariSearch(r.remarks, search))
+      );
+    }
+
     let totalReceivedAmount = 0;
     let pendingAmount = 0;
     let pendingVerificationCount = 0;
 
-    (rows || []).forEach(r => {
+    recordsToUse.forEach(r => {
       const amt = parseFloat(r.amount) || 0;
       if (r.status === 'PENDING_VERIFICATION') {
         pendingVerificationCount += 1;
@@ -554,8 +594,8 @@ app.get('/api/vargani', (req, res) => {
       pendingAmount: pendingAmount,     // Pending (Pay Later + Unverified Online)
       pendingVerificationCount: pendingVerificationCount,
       grandTotal: grandTotal,           // Overall Total
-      totalDonors: rows.length,
-      records: rows
+      totalDonors: recordsToUse.length,
+      records: recordsToUse
     });
   });
 });
@@ -755,7 +795,13 @@ app.post('/api/admin/events/send-reminders', (req, res) => {
     return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
   }
   const { eventId, eventTitle, eventDate } = req.body;
-  db.all("SELECT donor_name, donor_mobile, donor_email FROM vargani_records UNION SELECT name as donor_name, mobile as donor_mobile, email as donor_email FROM user_registrations", [], (err, rows) => {
+  db.all(`
+    SELECT donor_name, donor_mobile, donor_email FROM vargani_records 
+    UNION 
+    SELECT name as donor_name, mobile as donor_mobile, email as donor_email FROM user_registrations 
+    UNION 
+    SELECT name as donor_name, mobile as donor_mobile, '' as donor_email FROM broadcast_contacts
+  `, [], (err, rows) => {
     const totalReminders = rows ? rows.length : 0;
     res.json({
       success: true,
@@ -830,6 +876,209 @@ app.post('/api/send-email-receipt', async (req, res) => {
   }
 
   res.json({ success: true, message: `ई-पावती ${donorEmail} वर पाठवण्यात आली आहे!` });
+});
+
+// 8. WhatsApp Devotee Broadcast Contacts API
+app.get('/api/admin/broadcast-contacts', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  const { search, tag } = req.query;
+  let query = "SELECT * FROM broadcast_contacts";
+  const params = [];
+  const conditions = [];
+
+  if (tag && tag !== 'ALL') {
+    conditions.push("group_tag = ?");
+    params.push(tag);
+  }
+  if (search && search.trim()) {
+    const sRaw = search.trim();
+    const sDev = romanToDevanagari(sRaw);
+    conditions.push("(name LIKE ? OR name LIKE ? OR mobile LIKE ? OR notes LIKE ? OR notes LIKE ?)");
+    params.push(`%${sRaw}%`, `%${sDev}%`, `%${sRaw}%`, `%${sRaw}%`, `%${sDev}%`);
+  }
+
+  if (conditions.length > 0) {
+    query += " WHERE " + conditions.join(" AND ");
+  }
+  query += " ORDER BY id DESC";
+
+  db.all(query, params, (err, rows) => {
+    if (err) return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+    let contactRows = rows || [];
+    if (search && search.trim()) {
+      contactRows = contactRows.filter(c =>
+        matchesDevanagariSearch(c.name, search) ||
+        (c.mobile && c.mobile.includes(search.trim())) ||
+        (c.notes && matchesDevanagariSearch(c.notes, search)) ||
+        (c.group_tag && matchesDevanagariSearch(c.group_tag, search))
+      );
+    }
+    res.json({ success: true, contacts: contactRows });
+  });
+});
+
+app.post('/api/admin/broadcast-contacts', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  let { name, mobile, groupTag, notes } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, message: 'भाविकाचे नाव आवश्यक आहे.' });
+  }
+  if (!mobile) {
+    return res.status(400).json({ success: false, message: 'मोबाईल क्रमांक आवश्यक आहे.' });
+  }
+
+  let cleanMobile = mobile.toString().replace(/\D/g, '');
+  if (cleanMobile.length === 12 && cleanMobile.startsWith('91')) {
+    cleanMobile = cleanMobile.substring(2);
+  }
+  if (cleanMobile.length !== 10) {
+    return res.status(400).json({ success: false, message: 'कृपया वैध १० अंकी मोबाईल क्रमांक प्रविष्ट करा.' });
+  }
+
+  const query = "INSERT INTO broadcast_contacts (name, mobile, group_tag, notes) VALUES (?, ?, ?, ?)";
+  db.run(query, [name.trim(), cleanMobile, groupTag || 'भाविक', notes ? notes.trim() : ''], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+    res.json({
+      success: true,
+      message: `🎉 '${name.trim()}' यांचा व्हॉट्सॲप संपर्क यशस्वीरित्या जोडला गेला!`,
+      contact: {
+        id: this.lastID,
+        name: name.trim(),
+        mobile: cleanMobile,
+        group_tag: groupTag || 'भाविक',
+        notes: notes ? notes.trim() : '',
+        created_at: new Date().toISOString()
+      }
+    });
+  });
+});
+
+app.put('/api/admin/broadcast-contacts/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  const contactId = req.params.id;
+  let { name, mobile, groupTag, notes } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, message: 'भाविकाचे नाव आवश्यक आहे.' });
+  }
+  let cleanMobile = mobile ? mobile.toString().replace(/\D/g, '') : '';
+  if (cleanMobile.length === 12 && cleanMobile.startsWith('91')) {
+    cleanMobile = cleanMobile.substring(2);
+  }
+  if (cleanMobile.length !== 10) {
+    return res.status(400).json({ success: false, message: 'कृपया वैध १० अंकी मोबाईल क्रमांक प्रविष्ट करा.' });
+  }
+
+  const query = "UPDATE broadcast_contacts SET name = ?, mobile = ?, group_tag = ?, notes = ? WHERE id = ?";
+  db.run(query, [name.trim(), cleanMobile, groupTag || 'भाविक', notes ? notes.trim() : '', contactId], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Update error', error: err.message });
+    res.json({ success: true, message: 'संपर्क माहिती यशस्वीरित्या अद्यतनित झाली!' });
+  });
+});
+
+app.delete('/api/admin/broadcast-contacts/:id', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  db.run("DELETE FROM broadcast_contacts WHERE id = ?", [req.params.id], function(err) {
+    if (err) return res.status(500).json({ success: false, message: 'Delete error', error: err.message });
+    res.json({ success: true, message: 'संपर्क यादीतून यशस्वीपणे हटवला गेला.' });
+  });
+});
+
+app.post('/api/admin/broadcast-contacts/bulk', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+  const { contacts } = req.body;
+  if (!Array.isArray(contacts) || contacts.length === 0) {
+    return res.status(400).json({ success: false, message: 'किमान एक संपर्क आवश्यक आहे.' });
+  }
+
+  let addedCount = 0;
+  db.serialize(() => {
+    const stmt = db.prepare("INSERT INTO broadcast_contacts (name, mobile, group_tag, notes) VALUES (?, ?, ?, ?)");
+    contacts.forEach(c => {
+      if (c && c.name && c.mobile) {
+        let cleanMobile = c.mobile.toString().replace(/\D/g, '');
+        if (cleanMobile.length === 12 && cleanMobile.startsWith('91')) {
+          cleanMobile = cleanMobile.substring(2);
+        }
+        if (cleanMobile.length === 10) {
+          stmt.run([c.name.trim(), cleanMobile, c.groupTag || 'भाविक', c.notes || '']);
+          addedCount++;
+        }
+      }
+    });
+    stmt.finalize((err) => {
+      if (err) return res.status(500).json({ success: false, message: 'Bulk insert error', error: err.message });
+      res.json({ success: true, message: `${addedCount} संपर्क यशस्वीरित्या ब्रॉडकास्ट यादीत जोडले गेले!`, addedCount });
+    });
+  });
+});
+
+// Auto-sync unique donors and registered devotees into broadcast contacts
+app.post('/api/admin/broadcast-contacts/sync', (req, res) => {
+  const token = req.headers['authorization'];
+  if (!token || !token.startsWith('YMM-TOKEN-')) {
+    return res.status(403).json({ success: false, message: 'केवळ मुख्य प्रशासकाला अधिकार आहेत.' });
+  }
+
+  const query = `
+    SELECT donor_name as name, donor_mobile as mobile, 'देणगीदार' as group_tag 
+    FROM vargani_records 
+    WHERE donor_mobile IS NOT NULL AND donor_mobile != ''
+    UNION 
+    SELECT name, mobile, 'भाविक' as group_tag 
+    FROM user_registrations 
+    WHERE mobile IS NOT NULL AND mobile != ''
+  `;
+
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, message: 'Database error', error: err.message });
+    if (!rows || rows.length === 0) {
+      return res.json({ success: true, message: 'कोणतेही नवीन देणगीदार किंवा नोंदणीकृत भाविक आढळले नाहीत.', addedCount: 0 });
+    }
+
+    db.all("SELECT mobile FROM broadcast_contacts", [], (err2, existing) => {
+      if (err2) return res.status(500).json({ success: false, message: 'Database error' });
+      const existingMobiles = new Set((existing || []).map(e => e.mobile.toString().replace(/\D/g, '')));
+      
+      let newCount = 0;
+      db.serialize(() => {
+        const stmt = db.prepare("INSERT INTO broadcast_contacts (name, mobile, group_tag, notes) VALUES (?, ?, ?, ?)");
+        rows.forEach(r => {
+          let clean = (r.mobile || '').toString().replace(/\D/g, '');
+          if (clean.length === 12 && clean.startsWith('91')) clean = clean.substring(2);
+          if (clean.length === 10 && !existingMobiles.has(clean)) {
+            existingMobiles.add(clean);
+            stmt.run([r.name || 'भाविक', clean, r.group_tag || 'भाविक', 'देणगी नोंदवही/नोंदणी मधून आयात']);
+            newCount++;
+          }
+        });
+        stmt.finalize((err3) => {
+          if (err3) return res.status(500).json({ success: false, message: 'Sync error' });
+          res.json({
+            success: true,
+            message: newCount > 0 
+              ? `🎉 ${newCount} नवीन देणगीदार व भाविकांचे संपर्क आपोआप ब्रॉडकास्ट यादीत समाविष्ट झाले!` 
+              : `सर्व देणगीदार व नोंदणीकृत भाविक आधीच यादीत समाविष्ट आहेत.`,
+            addedCount: newCount
+          });
+        });
+      });
+    });
+  });
 });
 
 app.listen(PORT, () => {

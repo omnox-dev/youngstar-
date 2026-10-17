@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MandalPavtiModal from '../components/MandalPavtiModal';
+import WhatsAppBroadcastManager from '../components/WhatsAppBroadcastManager';
+import MarathiSearchInput from '../components/MarathiSearchInput';
+import MarathiInput from '../components/MarathiInput';
+import { matchesDevanagariSearch } from '../utils/transliteration';
 
 export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,7 +16,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Active Admin Sub-Tab
-  const [adminTab, setAdminTab] = useState('vargani'); // 'vargani' | 'users' | 'events' | 'gallery' | 'settings'
+  const [adminTab, setAdminTab] = useState('vargani'); // 'vargani' | 'broadcast' | 'users' | 'events' | 'gallery' | 'settings'
 
   // Dashboard Data State
   const [records, setRecords] = useState([]);
@@ -24,6 +28,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   const [selectedMandalRecord, setSelectedMandalRecord] = useState(null);
 
   // Edit Vargani Modal State (Admin Exclusive)
@@ -501,6 +506,27 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
     );
   }
 
+  // Client-side instant dual-script filter fallback for fast responsiveness
+  const displayedRecords = records.filter((r) => {
+    if (!searchQuery.trim()) return true;
+    return (
+      matchesDevanagariSearch(r.donor_name, searchQuery) ||
+      (r.receipt_no && r.receipt_no.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (r.donor_mobile && r.donor_mobile.includes(searchQuery.trim())) ||
+      (r.remarks && matchesDevanagariSearch(r.remarks, searchQuery))
+    );
+  });
+
+  const filteredUsers = pendingUsers.filter((u) => {
+    if (!userSearchQuery.trim()) return true;
+    return (
+      matchesDevanagariSearch(u.name, userSearchQuery) ||
+      (u.mobile && u.mobile.includes(userSearchQuery.trim())) ||
+      (u.email && u.email.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+      (u.address && matchesDevanagariSearch(u.address, userSearchQuery))
+    );
+  });
+
   // AUTHENTICATED: Render Full Dashboard
   return (
     <div className="max-w-[1140px] mx-auto px-4 py-8 flex flex-col gap-6">
@@ -537,6 +563,14 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
         >
           <span className="material-symbols-outlined text-[18px]">receipt_long</span>
           <span>वर्गणी व देणगी नोंदवही</span>
+        </button>
+
+        <button 
+          onClick={() => setAdminTab('broadcast')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${adminTab === 'broadcast' ? 'bg-[#25D366] text-white shadow' : 'bg-white text-[#5a4139] border border-[#ffe9e5]'}`}
+        >
+          <span className="material-symbols-outlined text-[18px]">campaign</span>
+          <span>व्हॉट्सॲप ब्रॉडकास्ट व भाविक यादी</span>
         </button>
 
         <button 
@@ -677,13 +711,11 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
               </div>
 
               <div className="md:col-span-4">
-                <label className="block text-[11px] font-bold text-[#281714] mb-1">नाव / मोबाईल / शेरा शोधा</label>
-                <input 
-                  type="text" 
-                  placeholder="शोधा..." 
+                <label className="block text-[11px] font-bold text-[#281714] mb-1">नाव / मोबाईल / शेरा शोधा (English / मराठी)</label>
+                <MarathiSearchInput 
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-white border text-xs text-[#281714]"
+                  onChange={setSearchQuery}
+                  placeholder="नाव, मोबाईल किंवा शेरा शोधा (उदा. sachin, pawar, biradwade)..."
                 />
               </div>
             </div>
@@ -704,7 +736,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((r) => (
+                  {displayedRecords.map((r) => (
                     <tr key={r.id} className={`border-b transition-colors ${r.status === 'PENDING_VERIFICATION' ? 'bg-amber-50/70 hover:bg-amber-100/70' : 'hover:bg-[#fff8f6]'}`}>
                       <td className="p-3 font-bold text-[#a93200]">{r.receipt_no}</td>
                       <td className="p-3 font-bold text-[#281714]">{r.donor_name}</td>
@@ -785,15 +817,30 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
         </div>
       )}
 
+      {/* TAB: WHATSAPP DEVOTEE BROADCAST & CONTACT MANAGEMENT */}
+      {adminTab === 'broadcast' && (
+        <WhatsAppBroadcastManager settings={settings} />
+      )}
+
       {/* TAB 2: REQUIREMENT 4: USER ACCESS APPROVAL PANEL */}
       {adminTab === 'users' && (
         <div className="bg-white rounded-2xl border border-[#ffe9e5] shadow-md p-6">
           <h2 className="font-headline text-lg font-bold text-[#281714] mb-1">
             युझर नोंदणी व ॲक्सेस मंजुरी (User Access Control Panel)
           </h2>
-          <p className="text-xs text-[#5a4139] mb-4">
-            ज्या भाविकांनी/सदस्यांनी नोंदणी केली आहे त्यांना ॲक्सेस (Grant Access) मंजूर करा जेणेकरून ते शेरा (Remarks) व पूर्ण मोबाईल नंबर पाहू शकतील.
-          </p>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+            <p className="text-xs text-[#5a4139]">
+              ज्या भाविकांनी/सदस्यांनी नोंदणी केली आहे त्यांना ॲक्सेस (Grant Access) मंजूर करा जेणेकरून ते शेरा (Remarks) व पूर्ण मोबाईल नंबर पाहू शकतील.
+            </p>
+            <div className="w-full sm:w-72 shrink-0">
+              <MarathiSearchInput
+                value={userSearchQuery}
+                onChange={setUserSearchQuery}
+                placeholder="युझर नाव किंवा मोबाईल शोधा..."
+                showInfoTip={false}
+              />
+            </div>
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -808,7 +855,7 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
                 </tr>
               </thead>
               <tbody>
-                {pendingUsers.map((u) => (
+                {filteredUsers.map((u) => (
                   <tr key={u.id} className="border-b hover:bg-[#fff8f6]">
                     <td className="p-3 font-bold text-[#281714]">{u.name}</td>
                     <td className="p-3 font-mono">{u.mobile}</td>
@@ -1106,16 +1153,14 @@ export default function AdminDashboard({ settings, onSettingsUpdate }) {
             </div>
 
             <form onSubmit={handleSaveEditVargani} className="p-5 flex flex-col gap-3 max-h-[80vh] overflow-y-auto text-xs">
-              <div>
-                <label className="block font-bold text-[#281714] mb-1">भाविकाचे पूर्ण नाव *</label>
-                <input 
-                  type="text" required
-                  value={editingRecord.donorName}
-                  onChange={(e) => setEditingRecord({ ...editingRecord, donorName: e.target.value })}
-                  placeholder="उदा. श्री. राहुल सचिन देशमुख"
-                  className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 focus:border-[#a93200] font-bold text-[#281714]"
-                />
-              </div>
+              <MarathiInput 
+                label="भाविकाचे पूर्ण नाव"
+                required={true}
+                value={editingRecord.donorName}
+                onChange={(e) => setEditingRecord({ ...editingRecord, donorName: e.target.value })}
+                placeholder="उदा. श्री. राहुल सचिन देशमुख"
+                className="w-full px-3 py-2 rounded-lg border border-[#d14307]/30 focus:border-[#a93200] font-bold text-[#281714]"
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

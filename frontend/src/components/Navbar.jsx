@@ -19,7 +19,7 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFF8F6]/95 backdrop-blur-md shadow-md no-print border-b border-[#ffe9e5]">
         {/* Auspicious Top Banner Strip with Centered Details */}
-        <div className="bg-gradient-to-r from-[#d14307] via-[#a93200] to-[#800000] text-white text-center py-1 px-2 sm:px-4">
+        <div className="bg-gradient-to-r from-[#d14307] via-[#a93200] to-[#800000] text-white text-center pt-2.5 sm:pt-3 pb-1 px-2 sm:px-4">
           <div className="max-w-[1240px] mx-auto flex items-center justify-center text-[10px] sm:text-xs font-semibold">
             {/* Center Establishment Year & Dynamic Edition Count */}
             <p className="tracking-wider uppercase font-bold flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-center mx-auto">
@@ -187,7 +187,7 @@ export default function Navbar({ activeTab, setActiveTab, settings, userSession,
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-[90] flex justify-end animate-fadeIn">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           ></div>

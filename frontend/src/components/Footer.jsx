@@ -49,10 +49,7 @@ export default function Footer({ setActiveTab }) {
             ईमेल: contact@youngstarpune.in<br/>
             वेळ: सकाळी ६:०० ते रात्री ११:००
           </p>
-          <div className="mt-1 p-2 rounded-lg bg-[#ffe9e5] flex items-center gap-2 text-xs font-semibold text-[#006b2c]">
-            <span className="material-symbols-outlined text-[18px]">verified</span>
-            <span>अधिकृत धर्मादाय नोंदणीकृत ट्रस्ट</span>
-          </div>
+
         </div>
       </div>
 

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import MandalPavtiModal from './MandalPavtiModal';
+import MarathiSearchInput from './MarathiSearchInput';
+import { matchesDevanagariSearch } from '../utils/transliteration';
 
 function toMarathiDigits(num) {
   if (num === null || num === undefined) return '';
@@ -24,11 +26,17 @@ export default function VarganiPustak({ records, festivalYear, editionText, onCl
   );
 
   const filteredRecords = displayRecords.filter(r => {
-    if (!searchFilter) return true;
-    const q = searchFilter.toLowerCase();
-    const name = (r.donor_name || r.donorName || '').toLowerCase();
+    if (!searchFilter.trim()) return true;
+    const name = r.donor_name || r.donorName || '';
     const no = (r.receipt_no || r.receiptNo || '').toLowerCase();
-    return name.includes(q) || no.includes(q);
+    const remarks = r.remarks || '';
+    const mobile = r.donor_mobile || r.donorMobile || '';
+    return (
+      matchesDevanagariSearch(name, searchFilter) ||
+      matchesDevanagariSearch(remarks, searchFilter) ||
+      no.includes(searchFilter.toLowerCase().trim()) ||
+      mobile.includes(searchFilter.trim())
+    );
   });
 
   const totalVerifiedAmount = displayRecords.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
@@ -410,13 +418,12 @@ export default function VarganiPustak({ records, festivalYear, editionText, onCl
               </p>
             </div>
 
-            <div className="w-full sm:w-72">
-              <input
-                type="text"
-                placeholder="पावती क्र. किंवा नाव शोधा..."
+            <div className="w-full sm:w-80">
+              <MarathiSearchInput
                 value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-neutral-100 border border-gray-300 text-xs focus:outline-none focus:border-[#8B2500]"
+                onChange={setSearchFilter}
+                placeholder="पावती क्र. किंवा नाव शोधा (उदा. amol, pawar)..."
+                showInfoTip={false}
               />
             </div>
           </div>
